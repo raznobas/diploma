@@ -14,6 +14,29 @@ class UsersAndRolesSeeder extends Seeder
      */
     public function run()
     {
+        Bouncer::role()->firstOrCreate(['name' => 'admin', 'title' => 'Администратор']);
+        Bouncer::role()->firstOrCreate(['name' => 'director', 'title' => 'Директор']);
+        Bouncer::role()->firstOrCreate(['name' => 'manager', 'title' => 'Менеджер']);
+
+        Bouncer::ability()->firstOrCreate(['name' => 'manage-categories', 'title' => 'Настройка категорий']);
+        Bouncer::ability()->firstOrCreate(['name' => 'manage-sales', 'title' => 'Управление продажами']);
+        Bouncer::ability()->firstOrCreate(['name' => 'manage-leads', 'title' => 'Управление лидами']);
+        Bouncer::ability()->firstOrCreate(['name' => 'manage-tasks', 'title' => 'Управление задачами']);
+
+        // Назначение разрешений ролям
+        Bouncer::allow('admin')->everything();
+        Bouncer::allow('director')->to([
+            'manage-categories',
+            'manage-sales',
+            'manage-leads',
+            'manage-tasks'
+        ]);
+        Bouncer::allow('manager')->to([
+            'manage-sales',
+            'manage-leads',
+            'manage-tasks'
+        ]);
+
         // Создание администратора
         $admin = User::firstOrCreate([
             'email' => 'admin@example.com',
@@ -32,6 +55,8 @@ class UsersAndRolesSeeder extends Seeder
                 'name' => "Director $i",
                 'password' => bcrypt('password_123456'),
             ]);
+            $director->director_id = $director->id;
+            $director->save();
             Bouncer::assign('director')->to($director);
             $directors[] = $director;
         }
