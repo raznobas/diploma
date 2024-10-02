@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Client;
 use App\Models\Sale;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportSalesFromXlsx extends Command
@@ -28,70 +29,113 @@ class ImportSalesFromXlsx extends Command
      */
     public function handle()
     {
-        // Путь к файлу XLSX
-        $filePath = storage_path('app/sales_data.xlsx');
+        $filePath = storage_path('testImport.xlsx');
 
-        // Загрузка файла
-        $spreadsheet = IOFactory::load($filePath);
-        $worksheet = $spreadsheet->getActiveSheet();
-
-        // Получение данных из файла
-        $data = $worksheet->toArray();
-
-        // Получение заголовков
-        $headers = array_shift($data);
-
-        // Сопоставление заголовков с полями
-        $headerMap = [
-            'ФИО клиента' => 'full_name',
-            'Дата оплаты' => 'payment_date',
-            'Спорт' => 'sport',
-            'Тип абонемента' => 'subscription_type',
-            'Тренер' => 'trainer',
-            // Другие поля
-        ];
-
-        // Обработка данных
-        foreach ($data as $row) {
-            $rowData = array_combine($headers, $row);
-
-            // Разделение ФИО на отдельные поля
-            $fullName = $rowData[$headerMap['ФИО клиента']];
-            $nameParts = explode(' ', $fullName);
-
-            // Проверка, что ФИО состоит из двух или более слов
-            if (count($nameParts) < 2) {
-                $this->warn("Игнорируем строку с ФИО: $fullName");
-                continue; // Пропускаем эту строку
-            }
-
-            $surname = $nameParts[0] ?? '';
-            $name = $nameParts[1] ?? '';
-            $patronymic = $nameParts[2] ?? '';
-
-            // Создание нового клиента
-            $client = Client::create([
-                'surname' => $surname,
-                'name' => $name,
-                'patronymic' => $patronymic,
-                // Другие поля клиента
-            ]);
-
-            // Создание записи в таблице sales
-            $saleData = [];
-            foreach ($headerMap as $header => $field) {
-                if ($field === 'full_name') {
-                    continue; // Пропускаем ФИО, так как оно уже обработано
-                }
-                $saleData[$field] = $rowData[$header];
-            }
-            $saleData['client_id'] = $client->id;
-
-            Sale::create($saleData);
+        if (!file_exists($filePath)) {
+            $this->error("File not found: $filePath");
+            return;
         }
 
-        $this->info('Данные успешно импортированы!');
+        $spreadsheet = IOFactory::load($filePath);
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
 
-        return 0;
+        // Пропустить заголовки
+        array_shift($rows);
+
+        $importedCount = 0;
+        $skippedCount = 0;
+        $skippedRows = [];
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($rows as $index => $row) {
+                // Создаем или находим клиента
+                $client = Client::firstOrCreate([
+                    'surname' => $row[0],
+                    'name' => $row[1],
+                    'patronymic' => $row[2],
+                    'phone' => $row[3],
+                    'is_lead' => false,
+                    'director_id' => 3, // поменять это поле в зависимости от директора
+                ]);
+
+                // Преобразуем строки с датами в объекты DateTime
+                $saleDate = \DateTime::createFromFormat('d.m.Y', $row[4]);
+                $subscriptionStartDate = $row[14] !== null ? \DateTime::createFromFormat('d.m.Y', $row[14]) : null;
+                $subscriptionEndDate = $row[15] !== null ? \DateTime::createFromFormat('d.m.Y', $row[15]) : null;
+
+                // Преобразуем значение service_or_product в 'service' или 'product'
+                if ($row[5] === 'Услуга') {
+                    $serviceOrProduct = 'service';
+                } elseif ($row[5] === 'Товар') {
+                    $serviceOrProduct = 'product';
+                } else {
+                    $serviceOrProduct = null;
+                }
+
+                // Преобразуем значение service_type в соответствующий формат
+                $serviceType = $row[7] !== null ? $this->mapServiceType($row[7]) : null;
+
+                // Проверяем, что все необходимые поля заполнены
+                if ($serviceOrProduct === null || $saleDate === false) {
+                    $skippedCount++;
+                    $skippedRows[] = $index + 2; // +2, потому что индекс начинается с 0, а строки в Excel с 1, и мы пропустили заголовки
+                    continue;
+                }
+
+                // Создаем продажу
+                $sale = new Sale();
+                $sale->client_id = $client->id;
+                $sale->sale_date = $saleDate;
+                $sale->service_or_product = $serviceOrProduct;
+                $sale->sport_type = $row[6];
+                $sale->service_type = $serviceType;
+                $sale->product_type = $row[8];
+                $sale->subscription_duration = $row[9];
+                $sale->visits_per_week = $row[10];
+                $sale->training_count = $row[11];
+                $sale->trainer_category = $row[12];
+                $sale->trainer = $row[13];
+                $sale->subscription_start_date = $subscriptionStartDate;
+                $sale->subscription_end_date = $subscriptionEndDate;
+                $sale->cost = $row[16] !== null ? $row[16] : 0;
+                $sale->paid_amount = $row[17] !== null ? $row[17] : 0;
+                $sale->pay_method = $row[18];
+                $sale->comment = $row[19];
+
+                $sale->director_id = 3; // поменять это поле в зависимости от директора
+
+                $sale->save();
+                $importedCount++;
+            }
+
+            DB::commit();
+
+            $this->info("Sales data imported successfully.");
+            $this->info("Imported rows: $importedCount");
+            $this->info("Skipped rows: $skippedCount");
+
+            if (!empty($skippedRows)) {
+                $this->info("Skipped rows numbers: " . implode(', ', $skippedRows));
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->error("An error occurred: " . $e->getMessage());
+        }
+    }
+
+    private function mapServiceType(string $serviceType): ?string
+    {
+        $serviceTypeMap = [
+            'Пробная' => 'trial',
+            'Групповая' => 'group',
+            'Минигруппа' => 'minigroup',
+            'Индивидуальная' => 'individual',
+            'Сплит' => 'split',
+        ];
+
+        return $serviceTypeMap[$serviceType] ?? null;
     }
 }

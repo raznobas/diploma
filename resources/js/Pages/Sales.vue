@@ -11,9 +11,11 @@ import Modal from "@/Components/Modal.vue";
 import ClientModal from "@/Components/ClientModal.vue";
 import ClientLeadForm from "@/Components/ClientLeadForm.vue";
 import { useToast } from "@/useToast";
+import dayjs from "dayjs";
+import Pagination from "@/Components/Pagination.vue";
 const { showToast } = useToast();
 
-const props = defineProps(['categories', 'categoryCosts']);
+const props = defineProps(['categories', 'categoryCosts', 'sales']);
 
 const form = useForm({
     sale_date: new Date().toISOString().split('T')[0],
@@ -34,6 +36,8 @@ const form = useForm({
     cost: 0,
     paid_amount: 0,
     pay_method: null,
+    comment: null,
+    created_by: usePage().props.auth.user.id
 });
 
 const updateFormWithNames = () => {
@@ -473,6 +477,11 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                         </select>
                         <InputError :message="form.errors.paid_amount" class="mt-2 text-sm text-red-600"/>
                     </div>
+                    <div class="flex flex-col">
+                        <label for="comment" class="text-sm font-medium text-gray-700">Комментарий</label>
+                        <input id="comment" type="text" v-model="form.comment" class="p-1 border border-gray-300 rounded-md"/>
+                        <InputError :message="form.errors.comment" class="mt-2 text-sm text-red-600"/>
+                    </div>
                 </div>
                 <div class="mt-4">
                     <PrimaryButton :disabled="form.processing">Добавить продажу</PrimaryButton>
@@ -483,6 +492,70 @@ const isProductActive = computed(() => form.service_or_product === 'product');
             </form>
             <ClientModal :show="showModal" :client="selectedClientCard" @close="closeModal"
                          @client-updated="handleClientUpdated"/>
+            <div>
+                <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список всех продаж вашей организации (всего: {{ sales.data.length }})</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид спорта/товара</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид услуги</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Абонемент/Посещ. в нед.</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Кол-во трен-вок</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тренер</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начало абонем.</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Конец абонем.</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена/Всего оплач.</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Способ опл.</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="sale in sales.data" :key="sale.id">
+                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.client?.surname }} {{ sale.client?.name }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.sport_type ?? sale.product_type }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <span v-if="sale.service_type === 'trial'">Пробная</span>
+                                <span v-else-if="sale.service_type === 'group'">Групповая</span>
+                                <span v-else-if="sale.service_type === 'minigroup'">Минигруппа</span>
+                                <span v-else-if="sale.service_type === 'individual'">Индивидуальная</span>
+                                <span v-else-if="sale.service_type === 'split'">Сплит</span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.subscription_duration === '0.03' ?
+                                'Разовая' :
+                                (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '') }}
+                                <span v-if="sale.subscription_duration && sale.visits_per_week">/</span>
+                                {{ sale.visits_per_week}}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.training_count }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.trainer }}
+                                <span v-if="sale.trainer && sale.trainer_category">/</span>
+                                {{ sale.trainer_category}}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.subscription_start_date ? dayjs(sale.subscription_start_date).format('DD.MM.YY') : '' }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.subscription_end_date ? dayjs(sale.subscription_end_date).format('DD.MM.YY') : '' }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.cost ? Number(sale.cost).toFixed(0) : '0' }}
+                                <span v-if="sale.cost && sale.paid_amount">/</span>
+                                {{ sale.paid_amount ? Number(sale.paid_amount).toFixed(0) : '0' }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.pay_method }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <button @click="openModal(sale.client_id)" class="text-indigo-600 hover:text-indigo-900">Карточка</button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <Pagination :items="sales" />
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>

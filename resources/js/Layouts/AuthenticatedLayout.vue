@@ -51,11 +51,8 @@ const hasAbility = (ability) => {
                                 <NavLink :href="route('sales.index')" :active="route().current('sales.index')">
                                     Продажи
                                 </NavLink>
-                                <NavLink :href="route('clients.renewals')" :active="route().current('clients.renewals')">
-                                    Продление
-                                </NavLink>
                                 <NavLink :href="route('clients.trials')" :active="route().current('clients.trials')">
-                                    Пробники
+                                   Старые пробники
                                 </NavLink>
                                 <NavLink :href="route('tasks.index')" :active="route().current('tasks.index')">
                                     Задачи

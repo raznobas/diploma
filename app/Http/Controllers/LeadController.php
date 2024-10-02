@@ -35,12 +35,12 @@ class LeadController extends Controller
         $leads = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', true)
             ->orderBy('created_at', 'desc')
-            ->paginate(15, ['*'], 'page', $leadsPage);
+            ->paginate(50, ['*'], 'page', $leadsPage);
 
         $leadAppointments = LeadAppointment::where('director_id', auth()->user()->director_id)
             ->where('status', 'scheduled')
             ->orderBy('training_date', 'desc')
-            ->paginate(15, ['*'], 'page_appointments', $leadAppointmentsPage);
+            ->paginate(50, ['*'], 'page_appointments', $leadAppointmentsPage);
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
 

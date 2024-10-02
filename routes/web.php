@@ -53,7 +53,6 @@ Route::resource('sales', SaleController::class)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('clients')->group(function () {
         Route::get('/search', [ClientController::class, 'search'])->name('clients.search');
-        Route::get('/renewals', [ClientController::class, 'renewals'])->name('clients.renewals');
         Route::get('/trials', [ClientController::class, 'trials'])->name('clients.trials');
         Route::get('/old', [ClientController::class, 'old'])->name('clients.old');
         Route::get('/source-options', [ClientController::class, 'getSourceOptions'])->name('clients.getSourceOptions');

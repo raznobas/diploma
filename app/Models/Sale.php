@@ -27,5 +27,12 @@ class Sale extends Model
         'cost',
         'paid_amount',
         'pay_method',
+        'comment',
+        'created_by',
     ];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_id');
+    }
 }

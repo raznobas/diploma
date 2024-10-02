@@ -32,6 +32,10 @@ class SaleController extends Controller
         if (auth()->user()->director_id === null) {
             return false;
         }
+        $sales = Sale::where('director_id', auth()->user()->director_id)
+            ->with(['client:id,name,surname'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(50);
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
 
@@ -41,6 +45,7 @@ class SaleController extends Controller
         return Inertia::render('Sales', [
             'categories' => $categories,
             'categoryCosts' => $categoryCosts,
+            'sales' => $sales
         ]);
     }
 
@@ -66,6 +71,8 @@ class SaleController extends Controller
             'cost' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'pay_method' => 'nullable|exists:categories,name',
+            'comment' => 'nullable|string',
+            'created_by' => 'nullable||exists:users,id',
         ]);
 
         $client = Client::find($validated['client_id']);

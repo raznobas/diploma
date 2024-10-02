@@ -34,7 +34,7 @@ class ClientController extends Controller
             ->where('is_lead', false)
             ->orderBy('created_at', 'desc')
             ->select('id', 'surname', 'name', 'patronymic', 'birthdate', 'phone', 'email')
-            ->paginate(15);
+            ->paginate(50);
 
         $source_options = Category::where('director_id', auth()->user()->director_id)
             ->where('type', 'ad_source')
@@ -156,73 +156,6 @@ class ClientController extends Controller
         return response()->json($client);
     }
 
-    public function renewals()
-    {
-        $this->authorize('manage-sales');
-        if (auth()->user()->director_id === null) {
-            return false;
-        }
-
-        $currentDate = now();
-
-        // Получаем всех клиентов с абонементами, отсортированными по дате окончания
-        $clients = Client::where('director_id', auth()->user()->director_id)
-            ->where('is_lead', false)
-            ->whereHas('sales', function ($query) use ($currentDate) {
-                $query->whereIn('service_type', ['group', 'minigroup']);
-            })
-            ->with(['sales' => function ($query) use ($currentDate) {
-                $query->select('client_id', 'subscription_end_date', 'service_type')
-                    ->whereIn('service_type', ['group', 'minigroup'])
-                    ->orderBy('subscription_end_date', 'desc')
-                    ->limit(1);
-            }])
-            ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
-            ->get();
-
-        // Фильтруем клиентов по условиям
-        $clientsToRenewal = $clients->filter(function ($client) use ($currentDate) {
-            $subscriptionEndDate = $client->sales->first()->subscription_end_date ?? null;
-
-            if ($subscriptionEndDate === null) {
-                return false;
-            }
-
-            // Проверяем, есть ли у клиента хотя бы один действующий абонемент
-            $hasActiveSubscription = Sale::where('client_id', $client->id)
-                ->where('subscription_end_date', '>', $currentDate)
-                ->exists();
-            if ($hasActiveSubscription) {
-                return false;
-            }
-
-            // Клиенты, у которых заканчивается абонемент в течение недели
-            if ($subscriptionEndDate <= (clone $currentDate)->addDays(7) && $subscriptionEndDate >= $currentDate) {
-                return true;
-            }
-
-            // Клиенты, у которых абонемент закончился в течение последнего месяца
-            if ($subscriptionEndDate >= (clone $currentDate)->subMonth()->startOfDay() && $subscriptionEndDate < $currentDate->startOfDay()) {
-                return true;
-            }
-
-            return false;
-        });
-
-        // Добавляем поля из sales к каждому клиенту
-        $clientsToRenewal->each(function ($client) {
-            $client->subscription_end_date = $client->sales->first()->subscription_end_date ?? null;
-            $client->service_type = $client->sales->first()->service_type ?? null;
-        });
-
-        // Пагинация на стороне сервера
-        $paginatedClients = $this->serverPaginate($clientsToRenewal);
-
-        return Inertia::render('Clients/Renewals', [
-            'clientsToRenewal' => $paginatedClients,
-        ]);
-    }
-
     public function old()
     {
         $this->authorize('manage-sales');
@@ -307,7 +240,7 @@ class ClientController extends Controller
                 $query->where('subscription_end_date', '>', $currentDate);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
-            ->paginate(15);
+            ->paginate(50);
 
         // Получаем training_date для каждого клиента
         $trialClients->each(function ($client) use ($trials) {
@@ -335,7 +268,7 @@ class ClientController extends Controller
 
     private function serverPaginate($items)
     {
-        $perPage = 15;
+        $perPage = 50;
         $currentPage = request()->input('page', 1);
         return new \Illuminate\Pagination\LengthAwarePaginator(
             $items->forPage($currentPage, $perPage),
