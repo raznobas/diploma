@@ -493,11 +493,12 @@ const isProductActive = computed(() => form.service_or_product === 'product');
             <ClientModal :show="showModal" :client="selectedClientCard" @close="closeModal"
                          @client-updated="handleClientUpdated"/>
             <div>
-                <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список всех продаж вашей организации (всего: {{ sales.data.length }})</h3>
+                <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список всех продаж вашей организации</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид спорта/товара</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид услуги</th>
@@ -513,6 +514,9 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="sale in sales.data" :key="sale.id">
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ sale.sale_date ? dayjs(sale.sale_date).format('DD.MM.YY') : '' }}
+                            </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.client?.surname }} {{ sale.client?.name }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.sport_type ?? sale.product_type }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">

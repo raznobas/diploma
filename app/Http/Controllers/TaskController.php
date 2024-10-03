@@ -145,11 +145,13 @@ class TaskController extends Controller
         $clients = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', false)
             ->whereHas('sales', function ($query) use ($currentDate) {
-                $query->whereIn('service_type', ['group', 'minigroup']);
+                $query->whereIn('service_type', ['group', 'minigroup'])
+                    ->where('subscription_duration', '!=', 0.03); // Исключаем записи с разовыми
             })
             ->with(['sales' => function ($query) use ($currentDate) {
                 $query->select('client_id', 'subscription_end_date', 'service_type')
                     ->whereIn('service_type', ['group', 'minigroup'])
+                    ->where('subscription_duration', '!=', 0.03) // Исключаем записи с разовыми
                     ->orderBy('subscription_end_date', 'desc')
                     ->limit(1);
             }])
@@ -167,6 +169,7 @@ class TaskController extends Controller
             // Проверяем, есть ли у клиента хотя бы один действующий абонемент
             $hasActiveSubscription = Sale::where('client_id', $client->id)
                 ->where('subscription_end_date', '>', $currentDate)
+                ->where('subscription_duration', '!=', 0.03) // Исключаем записи с разовыми
                 ->exists();
             if ($hasActiveSubscription) {
                 return false;
