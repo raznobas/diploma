@@ -7,10 +7,7 @@ import {useToast} from "@/useToast";
 
 const {showToast} = useToast();
 
-const props = defineProps({
-    categories: Array,
-    categoryCosts: Array,
-});
+const props = defineProps(['categories', 'categoryCosts']);
 
 const form = useForm({
     name: "",
@@ -220,7 +217,8 @@ const getCategoryName = (categoryId) => {
                                 getCategoryName(cost.main_category_id)
                             }}</span>
                     </div>
-                    <div v-for="additional in cost.additional_costs" :key="additional.id"
+                    <div v-if="cost.additional_costs && cost.additional_costs.length > 0"
+                         v-for="additional in cost.additional_costs" :key="additional.id"
                          class="flex justify-between items-center">
                         <span>Дополнительная категория:</span>
                         <span>{{

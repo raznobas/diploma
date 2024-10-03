@@ -29,7 +29,7 @@ class ImportSalesFromXlsx extends Command
      */
     public function handle()
     {
-        $filePath = storage_path('testImport.xlsx');
+        $filePath = storage_path('шаблон1.xlsx');
 
         if (!file_exists($filePath)) {
             $this->error("File not found: $filePath");
@@ -41,7 +41,24 @@ class ImportSalesFromXlsx extends Command
         $rows = $worksheet->toArray();
 
         // Пропустить заголовки
-        array_shift($rows);
+        $headers = array_shift($rows);
+
+        // Определите индекс столбца, содержащего director_id (предположим, что это столбец F)
+        $directorIdColumnIndex = array_search('director_id', $headers);
+
+        if ($directorIdColumnIndex === false) {
+            $this->error("Column 'director_id' not found in the headers.");
+            return;
+        }
+
+        // Получите значение director_id из первой строки
+        $directorId = $rows[0][$directorIdColumnIndex];
+
+        if (empty($directorId)) {
+            $this->error("Director ID is empty in the first row.");
+            return;
+        }
+        $this->info("Importing for director ID: ". $directorId);
 
         $importedCount = 0;
         $skippedCount = 0;
@@ -58,7 +75,7 @@ class ImportSalesFromXlsx extends Command
                     'patronymic' => $row[2],
                     'phone' => $row[3],
                     'is_lead' => false,
-                    'director_id' => 3, // поменять это поле в зависимости от директора
+                    'director_id' => $directorId, // Используем значение из таблицы
                 ]);
 
                 // Преобразуем строки с датами в объекты DateTime
@@ -105,7 +122,7 @@ class ImportSalesFromXlsx extends Command
                 $sale->pay_method = $row[18];
                 $sale->comment = $row[19];
 
-                $sale->director_id = 3; // поменять это поле в зависимости от директора
+                $sale->director_id = $directorId; // Используем значение из таблицы
 
                 $sale->save();
                 $importedCount++;

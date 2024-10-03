@@ -168,6 +168,7 @@ const fetchTasks = async (clientId) => {
                     <div class="mt-2">
                         <div class="flex gap-2 justify-between" v-if="!isEditing">
                             <p class="text-sm text-gray-500">
+                                <strong>ID:</strong> {{ client.id }}<br>
                                 <strong>Фамилия:</strong> {{ client.surname }}<br>
                                 <strong>Имя:</strong> {{ client.name }}<br>
                                 <strong>Отчество:</strong> {{ client.patronymic }}<br>

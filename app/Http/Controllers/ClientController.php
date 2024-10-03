@@ -219,25 +219,30 @@ class ClientController extends Controller
     public function trials()
     {
         $this->authorize('manage-sales');
+
         if (auth()->user()->director_id === null) {
             return false;
         }
 
         $currentDate = now();
         $oneMonthAgo = $currentDate->subMonth();
+        $directorId = auth()->user()->director_id;
 
-        // Получаем все пробные тренировки, которые были более месяца назад
+        // Получаем все пробные тренировки, которые были более месяца назад и относятся к текущему director_id
         $trials = Sale::where('sale_date', '<', $oneMonthAgo)
             ->where('service_type', '=', 'trial')
+            ->where('director_id', $directorId)
             ->get();
 
         // Получаем уникальные client_id из этих пробных тренировок
         $clientIds = $trials->pluck('client_id')->unique();
 
-        // Получаем клиентов, у которых нет активного абонемента
+        // Получаем клиентов, у которых нет активного абонемента и относятся к текущему director_id
         $trialClients = Client::whereIn('id', $clientIds)
-            ->whereDoesntHave('sales', function ($query) use ($currentDate) {
-                $query->where('subscription_end_date', '>', $currentDate);
+            ->where('director_id', $directorId)
+            ->whereDoesntHave('sales', function ($query) use ($currentDate, $directorId) {
+                $query->where('subscription_end_date', '>', $currentDate)
+                    ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
             ->paginate(50);

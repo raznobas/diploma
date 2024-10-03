@@ -109,19 +109,23 @@ class TaskController extends Controller
     {
         $currentDate = now();
         $oneMonthAgo = $currentDate->subMonth();
+        $directorId = auth()->user()->director_id;
 
-        // Получаем все пробные тренировки, которые были менее месяца назад
+        // Получаем все пробные тренировки, которые были менее месяца назад и относятся к текущему director_id
         $trialsLessThanMonth = Sale::where('sale_date', '>=', $oneMonthAgo)
             ->where('service_type', '=', 'trial')
+            ->where('director_id', $directorId)
             ->get();
 
         // Получаем уникальные client_id из этих пробных тренировок
         $clientIdsLessThanMonth = $trialsLessThanMonth->pluck('client_id')->unique();
 
-        // Получаем клиентов, у которых нет активного абонемента
+        // Получаем клиентов, у которых нет активного абонемента и относятся к текущему director_id
         $trialClientsLessThanMonth = Client::whereIn('id', $clientIdsLessThanMonth)
-            ->whereDoesntHave('sales', function ($query) use ($currentDate) {
-                $query->where('subscription_end_date', '>', $currentDate);
+            ->where('director_id', $directorId)
+            ->whereDoesntHave('sales', function ($query) use ($currentDate, $directorId) {
+                $query->where('subscription_end_date', '>', $currentDate)
+                    ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
             ->paginate(50, ['*'], 'trials', $page);

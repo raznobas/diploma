@@ -33,7 +33,9 @@ class CategoryController extends Controller
         }
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
-        $categoryCosts = CategoryCost::with('additionalCosts')->get();
+        $categoryCosts = CategoryCost::with('additionalCosts')
+            ->where('director_id', auth()->user()->director_id)
+            ->get();
 
         return Inertia::render('Director/Categories/Index', [
             'categories' => $categories,
@@ -80,6 +82,7 @@ class CategoryController extends Controller
         // Найти основную категорию
         $mainCategory = Category::where('name', $request->input('mainCategory.option'))
             ->where('type', $request->input('mainCategory.type'))
+            ->where('director_id', auth()->user()->director_id)
             ->firstOrFail();
 
         // Создать новую запись в таблице category_costs
@@ -93,6 +96,7 @@ class CategoryController extends Controller
         foreach ($request->input('additionalCategories') as $additionalCategory) {
             $additionalCategoryModel = Category::where('name', $additionalCategory['option'])
                 ->where('type', $additionalCategory['type'])
+                ->where('director_id', auth()->user()->director_id)
                 ->firstOrFail();
 
             CategoryCostAdditional::create([
@@ -121,6 +125,11 @@ class CategoryController extends Controller
         $this->authorize('manage-categories');
 
         $categoryCost = CategoryCost::findOrFail($id);
+
+        if ($categoryCost->director_id !== auth()->user()->director_id) {
+            return redirect()->route('categories.index')->withErrors(['error' => 'У вас нет прав на удаление этой связки.']);
+        }
+
         $categoryCost->delete();
 
         return redirect()->route('categories.index')->with('success', 'Сборка стоимости успешно удалена.');
