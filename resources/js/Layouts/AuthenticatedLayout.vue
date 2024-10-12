@@ -54,9 +54,29 @@ const hasAbility = (ability) => {
                                 <NavLink :href="route('clients.trials')" :active="route().current('clients.trials')">
                                    Старые пробники
                                 </NavLink>
-                                <NavLink :href="route('tasks.index')" :active="route().current('tasks.index')">
-                                    Задачи
-                                </NavLink>
+                                <div class="relative inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out">
+                                    <Dropdown align="right" width="48">
+                                        <template #trigger>
+                                            <button type="button"
+                                                    class="inline-flex py-5 items-center border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                                Задачи
+                                                <svg class="ms-2 -me-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                                     viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                          clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </template>
+
+                                        <template #content>
+                                            <DropdownLink :href="route('tasks.index')"> Все задачи </DropdownLink>
+                                            <DropdownLink :href="route('tasks.noShowLeads')"> Не пришедшие лиды </DropdownLink>
+                                            <DropdownLink :href="route('tasks.trialsLessThanMonth')"> Пробы менее месяца </DropdownLink>
+                                            <DropdownLink :href="route('tasks.renewals')"> Продление </DropdownLink>
+                                        </template>
+                                    </Dropdown>
+                                </div>
                                 <NavLink v-if="hasAbility('manage-categories')" :href="route('categories.index')" :active="route().current('categories.index')">
                                     Настройка категорий
                                 </NavLink>

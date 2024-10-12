@@ -10,12 +10,14 @@ import 'vue-multiselect/dist/vue-multiselect.css';
 import Modal from "@/Components/Modal.vue";
 import ClientModal from "@/Components/ClientModal.vue";
 import ClientLeadForm from "@/Components/ClientLeadForm.vue";
-import { useToast } from "@/useToast";
+import {useToast} from "@/useToast";
 import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
-const { showToast } = useToast();
+import SaleEditForm from "@/Components/SaleEditForm.vue";
 
-const props = defineProps(['categories', 'categoryCosts', 'sales']);
+const {showToast} = useToast();
+
+const props = defineProps(['categories', 'categoryCosts', 'sales', 'person']);
 
 const form = useForm({
     sale_date: new Date().toISOString().split('T')[0],
@@ -107,8 +109,7 @@ const submit = () => {
     form.post(route('sales.store'), {
         onSuccess: () => {
             form.reset();
-            allSumPaid.value = false;
-            useTodayDate.value = false;
+            allSumPaid.value = false; useTodayDate.value = false;
             showToast("Продажа успешно добавлена!", "success");
         },
         onError: (errors) => {
@@ -218,7 +219,14 @@ const fullName = (option) => {
 // модальное окно
 const showModal = ref(false);
 const showLeadModal = ref(false);
+const showSaleModal = ref(false);
+const selectedSale = ref(null);
 const selectedClientCard = ref(null);
+
+const openEditModal = (sale) => {
+    selectedSale.value = sale;
+    showSaleModal.value = true;
+};
 
 // Обновляем данные о клиенте после того как с дочернего компонента пришел emit после обновления данных
 const handleClientUpdated = (updatedClient) => {
@@ -234,11 +242,28 @@ const openModal = async (clientId) => {
         showToast("Ошибка получения данных: " + error.message, "error");
     }
 };
+const updateSale = (updatedForm) => {
+    updatedForm.put(route('sales.update', selectedSale.value.id), {
+        onSuccess: () => {
+            closeModal();
+            showToast("Продажа успешно обновлена!", "success");
+        },
+        onError: (errors) => {
+            Object.values(errors).forEach(error => {
+                showToast(error, "error");
+            });
+        },
+    });
+};
+
 const createClient = (formData) => {
     formData.is_lead = false;
     formData.post(route('clients.store'), {
         onSuccess: () => {
             formData.reset();
+            if (props.person) {
+                form.client_object = props.person;
+            }
             showToast("Клиент успешно добавлен!", "success");
         },
         onError: (errors) => {
@@ -253,6 +278,8 @@ const closeModal = () => {
     showModal.value = false;
     showLeadModal.value = false;
     selectedClientCard.value = null;
+    showSaleModal.value = false;
+    selectedSale.value = null;
 };
 
 // галочка, которая устанавливает ту же сумму из поля cost в поле paid_amount
@@ -270,6 +297,25 @@ const isSubscriptionActive = computed(() => form.service_type === 'group' || for
 const isTrainingCountActive = computed(() => form.service_type === 'individual' || form.service_type === 'split');
 const isServiceActive = computed(() => form.service_or_product === 'service');
 const isProductActive = computed(() => form.service_or_product === 'product');
+
+// скрыть слишком длинный текст
+const truncateText = (text, length) => {
+    if (text?.length > length) {
+        return text.slice(0, length) + '...';
+    }
+    return text;
+};
+
+const deleteSale = (saleId) => {
+    if (confirm('Вы уверены, что хотите удалить эту продажу?')) {
+        try {
+            form.delete(route('sales.destroy', saleId));
+            showToast("Продажа успешно удалена!", "success");
+        } catch (error) {
+            showToast("Ошибка при удалении продажи: " + error.message, "error");
+        }
+    }
+};
 </script>
 
 <template>
@@ -347,8 +393,7 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                     <div class="flex flex-col" :class="{ 'disabled-field': !isServiceActive }">
                         <label for="service_type" class="text-sm font-medium text-gray-700">Вид услуги</label>
                         <select id="service_type" v-model="form.service_type"
-                                class="mt-1 p-1 pe-8 border border-gray-300 rounded-md"
-                                @change="updateServiceType">
+                                class="mt-1 p-1 pe-8 border border-gray-300 rounded-md">
                             <option value="trial">Пробная</option>
                             <option value="group">Групповая</option>
                             <option value="minigroup">Минигруппа</option>
@@ -394,7 +439,8 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                         </select>
                         <InputError :message="form.errors.visits_per_week" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col" :class="{ 'disabled-field': !isServiceActive || !isTrainingCountActive }">
+                    <div class="flex flex-col"
+                         :class="{ 'disabled-field': !isServiceActive || !isTrainingCountActive }">
                         <label for="training_count" class="text-sm font-medium text-gray-700">Кол-во тренировок</label>
                         <select id="training_count" v-model="form.training_count"
                                 class="mt-1 p-1 pe-8 border border-gray-300 rounded-md"
@@ -479,7 +525,8 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                     </div>
                     <div class="flex flex-col">
                         <label for="comment" class="text-sm font-medium text-gray-700">Комментарий</label>
-                        <input id="comment" type="text" v-model="form.comment" class="p-1 border border-gray-300 rounded-md"/>
+                        <input id="comment" type="text" v-model="form.comment"
+                               class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.comment" class="mt-2 text-sm text-red-600"/>
                     </div>
                 </div>
@@ -492,24 +539,52 @@ const isProductActive = computed(() => form.service_or_product === 'product');
             </form>
             <ClientModal :show="showModal" :client="selectedClientCard" @close="closeModal"
                          @client-updated="handleClientUpdated"/>
+            <SaleEditForm :show="showSaleModal" :sale="selectedSale" :categories="categories" :categoryCosts="categoryCosts" @update="updateSale" @close="closeModal"/>
             <div>
                 <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список всех продаж вашей организации</h3>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full text-sm divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид спорта/товара</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид услуги</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Абонемент/Посещ. в нед.</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Кол-во трен-вок</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тренер</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Начало абонем.</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Конец абонем.</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена/Всего оплач.</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Способ опл.</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Дата
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Имя
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Вид спорта/товара
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Вид услуги
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Абонемент/Посещ. в нед.
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Кол-во трен-вок
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Тренер
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Начало абонем.
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Конец абонем.
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Цена/Всего оплач.
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Способ опл.
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Комментарий
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Действия
+                            </th>
                         </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -517,7 +592,10 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                             <td class="px-3 py-2 whitespace-nowrap">
                                 {{ sale.sale_date ? dayjs(sale.sale_date).format('DD.MM.YY') : '' }}
                             </td>
-                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.client?.surname }} {{ sale.client?.name }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ sale.client?.surname }} {{
+                                    sale.client?.name
+                                }}
+                            </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.sport_type ?? sale.product_type }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <span v-if="sale.service_type === 'trial'">Пробная</span>
@@ -527,23 +605,29 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                                 <span v-else-if="sale.service_type === 'split'">Сплит</span>
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
-                                {{ sale.subscription_duration === '0.03' ?
-                                'Разовая' :
-                                (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '') }}
+                                {{
+                                    sale.subscription_duration === '0.03' ?
+                                        'Разовая' :
+                                        (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '')
+                                }}
                                 <span v-if="sale.subscription_duration && sale.visits_per_week">/</span>
-                                {{ sale.visits_per_week}}
+                                {{ sale.visits_per_week }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.training_count }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 {{ sale.trainer }}
                                 <span v-if="sale.trainer && sale.trainer_category">/</span>
-                                {{ sale.trainer_category}}
+                                {{ sale.trainer_category }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
-                                {{ sale.subscription_start_date ? dayjs(sale.subscription_start_date).format('DD.MM.YY') : '' }}
+                                {{
+                                    sale.subscription_start_date ? dayjs(sale.subscription_start_date).format('DD.MM.YY') : ''
+                                }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
-                                {{ sale.subscription_end_date ? dayjs(sale.subscription_end_date).format('DD.MM.YY') : '' }}
+                                {{
+                                    sale.subscription_end_date ? dayjs(sale.subscription_end_date).format('DD.MM.YY') : ''
+                                }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 {{ sale.cost ? Number(sale.cost).toFixed(0) : '0' }}
@@ -551,14 +635,29 @@ const isProductActive = computed(() => form.service_or_product === 'product');
                                 {{ sale.paid_amount ? Number(sale.paid_amount).toFixed(0) : '0' }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.pay_method }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap overflow-clip">
+                                <span :title="sale.comment" class="cursor-help">
+                                    {{ truncateText(sale?.comment, 15) }}
+                                </span>
+                            </td>
                             <td class="px-3 py-2 whitespace-nowrap">
-                                <button @click="openModal(sale.client_id)" class="text-indigo-600 hover:text-indigo-900">Карточка</button>
+                                <button @click="openModal(sale.client_id)"
+                                        class="text-indigo-600 hover:text-indigo-900">Карточка
+                                </button>
+                                <span class="ms-4">
+                                <button title="Редактировать" type="button" @click="openEditModal(sale)" class="px-1">
+                                    <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
+                                </button>
+                                <button @click="deleteSale(sale.id)" class="px-1 ms-1" title="Удалить продажу">
+                                    <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
+                                </button>
+                               </span>
                             </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-                <Pagination :items="sales" />
+                <Pagination :items="sales"/>
             </div>
         </div>
     </AuthenticatedLayout>

@@ -150,7 +150,6 @@ const closeModal = () => {
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Фамилия</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Отчество</th>
@@ -162,7 +161,6 @@ const closeModal = () => {
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                 <tr v-for="client in clients.data" :key="client.id">
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.id }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.surname }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.name }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.patronymic }}</td>

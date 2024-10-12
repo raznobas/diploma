@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CategoryCostController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
@@ -33,17 +34,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-
 Route::resource('categories', CategoryController::class)
     ->only(['index', 'store', 'update', 'destroy', 'destroyCost'])
     ->middleware(['auth', 'verified', 'can:manage-categories']);
 
-Route::post('/categories/store-cost', [CategoryController::class, 'storeCost'])
-    ->name('categories.storeCost')
-    ->middleware(['auth', 'verified', 'can:manage-categories']);
-
-Route::delete('/categories/destroy-cost/{id}', [CategoryController::class, 'destroyCost'])
-    ->name('categories.destroyCost')
+Route::resource('categoriesCost', CategoryCostController::class)
+    ->only(['index', 'store', 'update', 'destroy'])
     ->middleware(['auth', 'verified', 'can:manage-categories']);
 
 Route::resource('sales', SaleController::class)
@@ -64,15 +60,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ])
             ->parameters(['' => 'client']);
     });
+    Route::prefix('tasks')->group(function () {
+        Route::get('/no-show-leads', [TaskController::class, 'noShowLeads'])->name('tasks.noShowLeads');
+        Route::get('/renewals', [TaskController::class, 'renewals'])->name('tasks.renewals');
+        Route::get('/trials-month', [TaskController::class, 'trialsLessThanMonth'])->name('tasks.trialsLessThanMonth');
+    });
 });
 
 Route::resource('leads', LeadController::class)
     ->only(['index', 'store', 'update', 'destroy', 'show'])
-    ->middleware(['auth', 'verified']);
+    ->middleware(['auth', 'verified', 'can:manage-leads']);
 
 Route::resource('tasks', TaskController::class)
     ->only(['index', 'store', 'update', 'destroy', 'show'])
-    ->middleware(['auth', 'verified']);
+    ->middleware(['auth', 'verified', 'can:manage-tasks']);
 
 
 require __DIR__ . '/auth.php';

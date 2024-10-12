@@ -65,47 +65,24 @@ class CategoryController extends Controller
 
         return redirect()->route('categories.index');
     }
-    public function storeCost(Request $request)
+
+    public function update(Request $request, Category $category)
     {
         $this->authorize('manage-categories');
 
-        $request->validate([
-            'mainCategory.type' => 'required|string',
-            'mainCategory.option' => 'required|string',
-            'additionalCategories' => 'array',
-            'additionalCategories.*.type' => 'required|string',
-            'additionalCategories.*.option' => 'required|string',
-            'cost' => 'required|numeric',
-            'director_id' => 'required|exists:users,id',
-        ]);
-
-        // Найти основную категорию
-        $mainCategory = Category::where('name', $request->input('mainCategory.option'))
-            ->where('type', $request->input('mainCategory.type'))
-            ->where('director_id', auth()->user()->director_id)
-            ->firstOrFail();
-
-        // Создать новую запись в таблице category_costs
-        $categoryCost = CategoryCost::create([
-            'main_category_id' => $mainCategory->id,
-            'cost' => $request->input('cost'),
-            'director_id' => auth()->user()->director_id,
-        ]);
-
-        // Добавить дополнительные категории
-        foreach ($request->input('additionalCategories') as $additionalCategory) {
-            $additionalCategoryModel = Category::where('name', $additionalCategory['option'])
-                ->where('type', $additionalCategory['type'])
-                ->where('director_id', auth()->user()->director_id)
-                ->firstOrFail();
-
-            CategoryCostAdditional::create([
-                'category_cost_id' => $categoryCost->id,
-                'additional_category_id' => $additionalCategoryModel->id,
-            ]);
+        if ($category->director_id !== auth()->user()->director_id) {
+            return redirect()->back()->withErrors(['error' => 'У вас нет прав на редактирование этой категории.']);
         }
 
-        return redirect()->route('categories.index')->with('success', 'Стоимость категорий успешно сохранена.');
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $category->update([
+            'name' => $request->name,
+        ]);
+
+        return redirect()->back()->with('success', 'Category updated successfully');
     }
 
     public function destroy(Category $category)
@@ -119,19 +96,5 @@ class CategoryController extends Controller
         $category->delete();
 
         return redirect()->route('categories.index');
-    }
-    public function destroyCost($id)
-    {
-        $this->authorize('manage-categories');
-
-        $categoryCost = CategoryCost::findOrFail($id);
-
-        if ($categoryCost->director_id !== auth()->user()->director_id) {
-            return redirect()->route('categories.index')->withErrors(['error' => 'У вас нет прав на удаление этой связки.']);
-        }
-
-        $categoryCost->delete();
-
-        return redirect()->route('categories.index')->with('success', 'Сборка стоимости успешно удалена.');
     }
 }

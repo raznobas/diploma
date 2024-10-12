@@ -1,5 +1,5 @@
 <script setup>
-import {defineProps, defineEmits, ref, watch, computed, onMounted} from 'vue';
+import {defineProps, defineEmits, ref, watch, computed} from 'vue';
 import Modal from './Modal.vue';
 import SecondaryButton from './SecondaryButton.vue';
 import dayjs from "dayjs";
@@ -54,7 +54,6 @@ const loadClientSales = async (clientId) => {
         const response = await axios.get(route('sales.show', clientId));
         clientSales.value = response.data;
         calculateTotalSales();
-        sortClientSalesByDate();
     } catch (error) {
         showToast("Ошибка получения покупок клиента: " + error.message, "error");
     }
@@ -73,18 +72,6 @@ const calculateTotalSales = () => {
         }
         return total;
     }, 0);
-};
-
-// сортировка продаж по дате убывания
-const sortClientSalesByDate = () => {
-    if (!clientSales.value || clientSales.value.length === 0) {
-        return;
-    }
-    clientSales.value.sort((a, b) => {
-        const dateA = dayjs(a.created_at);
-        const dateB = dayjs(b.created_at);
-        return dateB.diff(dateA); // Сортировка по убыванию
-    });
 };
 
 const submit = () => {
@@ -134,6 +121,25 @@ const submitEdit = () => {
     });
 };
 
+const deleteClient = async () => {
+    if (!props.client || !props.client.id) {
+        return;
+    }
+    if (confirm('Вы уверены, что хотите удалить этого клиента/лида? Все продажи и задачи текущего клиента будут безвозвратно удалены')) {
+        formEdit.delete(route('clients.destroy', {id: props.client.id}), {
+            onSuccess: () => {
+                showToast("Клиент/лид успешно удален!", "success");
+                closeModal();
+            },
+            onError: (errors) => {
+                Object.values(errors).forEach(error => {
+                    showToast(error, "error");
+                });
+            },
+        });
+    }
+};
+
 const closeModal = () => {
     emit('close');
     isEditing.value = false;
@@ -159,9 +165,14 @@ const fetchTasks = async (clientId) => {
                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                         <span v-if="client.is_lead === 1">Информация о лид</span>
                         <span v-else>Информация о клиенте</span>
-                        <span class="ml-1">
+                        <span class="ml-3">
                             <button title="Редактировать" type="button" @click="editClient" class="mt-1">
-                                <i class="fa fa-pencil-square-o text-xl" aria-hidden="true"></i>
+                                <i class="fa fa-pencil text-xl text-blue-600" aria-hidden="true"></i>
+                            </button>
+                        </span>
+                        <span v-if="$page.props.auth.role !== 'manager'" class="ml-3">
+                            <button title="Удалить" type="button" @click="deleteClient" class="mt-1">
+                                <i class="fa fa-trash text-xl text-red-700" aria-hidden="true"></i>
                             </button>
                         </span>
                     </h3>
@@ -180,7 +191,10 @@ const fetchTasks = async (clientId) => {
                                 <strong>Телеграм:</strong> {{ client.telegram }}<br>
                                 <strong>Инстаграм:</strong> {{ client.instagram }}<br>
                                 <strong>Адрес:</strong> {{ client.address }}<br>
-                                <strong>Пол:</strong> {{ client.gender === 'male' ? 'М' : 'Ж' }}<br>
+                                <strong>Пол:</strong>
+                                <span v-if="client.gender === 'male'"> M</span>
+                                <span v-else-if="client.gender === 'female'"> Ж</span>
+                                <br>
                                 <strong>Источник:</strong> {{ client.ad_source }}
                             </p>
                             <p class="text-sm text-gray-500">
@@ -354,6 +368,7 @@ const fetchTasks = async (clientId) => {
                                     <th class="p-1 border border-slate-600 text-left">Цена</th>
                                     <th class="p-1 border border-slate-600 text-left">Оплачено</th>
                                     <th class="p-1 border border-slate-600 text-left">Метод оплаты</th>
+                                    <th class="p-1 border border-slate-600 text-left">Комментарий</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -374,7 +389,13 @@ const fetchTasks = async (clientId) => {
                                         <span v-else-if="sale.service_type === 'split'">Сплит</span>
                                     </td>
                                     <td class="p-1 border border-slate-600">{{ sale.product_type }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.subscription_duration }}</td>
+                                    <td class="p-1 border border-slate-600">
+                                        {{
+                                            sale.subscription_duration === '0.03' ?
+                                                'Разовая' :
+                                                (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '')
+                                        }}
+                                    </td>
                                     <td class="p-1 border border-slate-600">{{ sale.visits_per_week }}</td>
                                     <td class="p-1 border border-slate-600">{{ sale.training_count }}</td>
                                     <td class="p-1 border border-slate-600">{{ sale.trainer }}</td>
@@ -392,6 +413,7 @@ const fetchTasks = async (clientId) => {
                                     <td class="p-1 border border-slate-600">{{ sale.cost }}</td>
                                     <td class="p-1 border border-slate-600">{{ sale.paid_amount }}</td>
                                     <td class="p-1 border border-slate-600">{{ sale.pay_method }}</td>
+                                    <td class="p-1 border border-slate-600 max-w-64 break-words">{{ sale.comment }}</td>
                                 </tr>
                                 </tbody>
                             </table>

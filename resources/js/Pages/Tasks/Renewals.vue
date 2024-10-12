@@ -1,20 +1,19 @@
 <script setup>
-
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import 'dayjs/locale/ru';
-import { useToast } from "@/useToast";
-const { showToast } = useToast();
-
-dayjs.extend(relativeTime);
-
-import {Head} from "@inertiajs/vue3";
 import ClientModal from "@/Components/ClientModal.vue";
 import {ref} from "vue";
 import Pagination from "@/Components/Pagination.vue";
+import {useToast} from "@/useToast.js";
+import {Head} from "@inertiajs/vue3";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
-const props = defineProps(['oldClients']);
+const {showToast} = useToast();
+
+const props = defineProps({
+    clientsToRenewal: {
+        type: Object,
+    },
+});
 
 const showModal = ref(false);
 const selectedClient = ref(null);
@@ -39,12 +38,14 @@ const closeModal = () => {
 </script>
 
 <template>
-    <Head title="Старые клиенты"/>
+    <Head title="Продление"/>
 
     <AuthenticatedLayout>
         <div class="mx-auto p-4 sm:p-6 lg:p-8">
-            <h3 class="mb-4 text-lg font-medium text-gray-900">Список старых клиентов с истекшим абонементом</h3>
-            <table class="min-w-full divide-y divide-gray-200">
+            <h3 class="mb-4 text-lg font-medium text-gray-900">Список клиентов с абонементом истекающим и истекшим в
+                течении
+                1-го месяца</h3>
+            <table v-if="clientsToRenewal && clientsToRenewal.data" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Фамилия
@@ -57,7 +58,11 @@ const closeModal = () => {
                     </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта
                     </th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Истек
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Абонемент
+                    </th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Истек/(ает)
                     </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Действия
@@ -65,7 +70,7 @@ const closeModal = () => {
                 </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="client in oldClients.data" :key="client.id">
+                <tr v-for="client in clientsToRenewal.data" :key="client.id">
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.surname }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.name }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">
@@ -74,12 +79,13 @@ const closeModal = () => {
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.phone }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">{{ client.email }}</td>
                     <td class="px-3 py-2 whitespace-nowrap">
-                        <span class="cursor-help"
-                              :title="client.subscription_end_date ? dayjs(client.subscription_end_date).format('DD.MM.YYYY') : ''">
-                            {{
-                                client.subscription_end_date ? dayjs(client.subscription_end_date).locale('ru').fromNow() : ''
-                            }}
-                        </span>
+                        <span v-if="client.service_type === 'group'">Групповая</span>
+                        <span v-if="client.service_type === 'minigroup'">Минигруппа</span>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        {{
+                            client.subscription_end_date ? dayjs(client.subscription_end_date).format('DD.MM.YYYY') : ''
+                        }}
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap">
                         <button @click="openModal(client.id)" class="text-indigo-600 hover:text-indigo-900">Карточка
@@ -88,7 +94,7 @@ const closeModal = () => {
                 </tr>
                 </tbody>
             </table>
-            <Pagination :items="oldClients"/>
+            <Pagination :items="clientsToRenewal"/>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated"/>
         </div>

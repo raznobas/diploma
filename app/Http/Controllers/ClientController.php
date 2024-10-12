@@ -78,7 +78,7 @@ class ClientController extends Controller
             'director_id' => $client->director_id,
         ]);
 
-        return redirect()->back();
+        return redirect()->back()->with(['person' => $client]);
     }
 
     public function update(Request $request, $id)
@@ -101,6 +101,25 @@ class ClientController extends Controller
 
         $client = Client::findOrFail($id);
         $client->update($validatedData);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        // Проверка роли пользователя
+        $user = $request->user();
+        if (!$user->isAn('admin') && !$user->isA('director')) {
+            return redirect()->back()->withErrors(['error' => 'У вас нет прав на удаление клиентов или лидов.']);
+        }
+
+        $client = Client::where('director_id', auth()->user()->director_id)->where('id', $id)->first();
+
+        if (!$client) {
+            return response()->json(['message' => 'Клиент не найден'], 404);
+        }
+
+        $client->delete();
+
+        return redirect()->back()->with('success', 'Клиент/лид успешно удален.');
     }
 
     public function search(Request $request)

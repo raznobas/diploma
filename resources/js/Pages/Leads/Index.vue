@@ -3,7 +3,7 @@ import PrimaryButton from "@/Components/PrimaryButton.vue";
 import InputError from "@/Components/InputError.vue";
 import {Head, useForm, usePage} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import {computed, ref, watch} from "vue";
+import {computed, reactive, ref, watch} from "vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
 import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
@@ -12,14 +12,18 @@ import Modal from "@/Components/Modal.vue";
 import ClientLeadForm from "@/Components/ClientLeadForm.vue";
 import dayjs from "dayjs";
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+
 dayjs.extend(customParseFormat);
 import Pagination from "@/Components/Pagination.vue";
-import { useToast } from "@/useToast";
-const { showToast } = useToast();
+import {useToast} from "@/useToast";
+import axios from "axios";
 
-const props = defineProps(['categories', 'leads', 'leadAppointments']);
+const {showToast} = useToast();
+
+const props = defineProps(['categories', 'leads', 'leadAppointments', 'person']);
 
 const form = useForm({
+    id: null, // символизирует о том, что активно редактирование
     sale_date: new Date().toISOString().split('T')[0],
     client_object: null,
     client_id: null,
@@ -99,6 +103,9 @@ const createLead = (formData) => {
     formData.post(route('clients.store'), {
         onSuccess: () => {
             form.reset();
+            if (props.person) {
+                form.client_object = props.person;
+            }
             showToast("Лид успешно добавлен!", "success");
         },
         onError: (errors) => {
@@ -110,6 +117,58 @@ const createLead = (formData) => {
     closeModal();
 };
 
+const editAppointment = (appointment) => {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+    form.id = appointment.id; // form.id символизирует о том, что активно редактирование
+    form.sale_date = appointment.sale_date;
+    form.client_object = {
+        id: appointment.client_id,
+        surname: appointment.client.surname,
+        name: appointment.client.name,
+        patronymic: appointment.client.patronymic,
+        phone: appointment.client.phone,
+        ad_source: appointment.client.ad_source,
+    };
+    form.client_id = appointment.client_id;
+    form.sport_type = appointment.sport_type;
+    form.service_type = appointment.service_type;
+    form.trainer = appointment.trainer;
+    form.training_date = appointment.training_date;
+    form.training_time = appointment.training_time;
+    form.hasAppointment = true;
+};
+const submitEdit = () => {
+    form.client_id = form.client_object.id;
+    form.put(route('leads.update', {id: form.id}), {
+        onSuccess: () => {
+            form.reset();
+            showToast("Запись успешно обновлена!", "success");
+        },
+        onError: (errors) => {
+            Object.values(errors).forEach(error => {
+                showToast(error, "error");
+            });
+        },
+    });
+};
+
+const deleteAppointment = async (appointmentId) => {
+    if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+        form.delete(route('leads.destroy', appointmentId), {
+            onSuccess: () => {
+                showToast("Запись успешно удалена!", "success");
+            },
+            onError: (errors) => {
+                Object.values(errors).forEach(error => {
+                    showToast(error, "error");
+                });
+            },
+        });
+    }
+};
 
 </script>
 
@@ -123,6 +182,7 @@ const createLead = (formData) => {
                 <ClientLeadForm :is-lead="true" @submit="createLead"/>
             </Modal>
             <form @submit.prevent="submit" class="mt-6">
+                <h3 v-if="form.id" class="mt-8 mb-4 text-lg font-medium text-gray-900">Редактирование записи лида</h3>
                 <div class="flex flex-row flex-wrap gap-2 items-end mt-2">
                     <div class="flex flex-col col-span-1 w-32">
                         <label for="sale_date" class="text-sm font-medium text-gray-700">Дата продажи</label>
@@ -207,10 +267,9 @@ const createLead = (formData) => {
                     <div class="flex flex-col w-32" :class="{ 'disabled-field': !form.hasAppointment }">
                         <label for="training_date" class="text-sm font-medium text-gray-700">Дата записи</label>
                         <input id="training_date" type="date" v-model="form.training_date"
-                               class="mt-1 p-1 border border-gray-300 rounded-md"
-                               :disabled="!form.hasAppointment" required
+                               class="mt-1 p-1 border border-gray-300 rounded-md" required
                         />
-                        <InputError class="mt-2" :message="form.errors.training_date" />
+                        <InputError class="mt-2" :message="form.errors.training_date"/>
                     </div>
                     <div class="flex flex-col w-32" :class="{ 'disabled-field': !form.hasAppointment }">
                         <label for="training_time" class="text-sm font-medium text-gray-700">Время записи</label>
@@ -221,8 +280,12 @@ const createLead = (formData) => {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <PrimaryButton :disabled="form.processing">Добавить запись</PrimaryButton>
-                    <SecondaryButton class="ml-2" type="button" @click="() => { form.reset(); }">Очистить
+                    <PrimaryButton v-if="!form.id" :disabled="form.processing">Добавить запись</PrimaryButton>
+                    <PrimaryButton v-else type="button" :disabled="form.processing" @click="submitEdit()">
+                       Редактировать запись
+                    </PrimaryButton>
+                    <SecondaryButton class="ml-2" type="button" @click="() => { form.reset(); }">
+                        {{ form.id ? 'Отмена' : 'Очистить' }}
                     </SecondaryButton>
                 </div>
             </form>
@@ -233,7 +296,7 @@ const createLead = (formData) => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
                         </th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
                             спорта
@@ -254,7 +317,9 @@ const createLead = (formData) => {
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="appointment in leadAppointments.data" :key="appointment.id">
-                        <td class="px-3 py-2 whitespace-nowrap">{{ appointment.id }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                            {{ appointment.client?.surname }} {{ appointment.client?.name }}
+                        </td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ appointment.sport_type }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">
                             <span v-if="appointment.service_type === 'group'">Групповая</span>
@@ -273,6 +338,15 @@ const createLead = (formData) => {
                             <button @click="openModal(appointment.client_id)"
                                     class="text-indigo-600 hover:text-indigo-900">Карточка
                             </button>
+                            <span class="ms-4">
+                                <button title="Редактировать" type="button" @click="editAppointment(appointment)" class="px-1">
+                                    <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
+                                </button>
+                                <button @click="deleteAppointment(appointment.id)" class="px-1 ms-1"
+                                        title="Удалить запись">
+                                    <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
+                                </button>
+                            </span>
                         </td>
                     </tr>
                     </tbody>
@@ -284,8 +358,6 @@ const createLead = (formData) => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
-                        </th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Фамилия
                         </th>
@@ -309,7 +381,6 @@ const createLead = (formData) => {
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="lead in leads.data" :key="lead.id">
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.id }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ lead.surname }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ lead.name }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ lead.patronymic }}</td>

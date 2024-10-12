@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\Task;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Silber\Bouncer\Bouncer;
 
@@ -28,21 +29,13 @@ class TaskController extends Controller
         if (auth()->user()->director_id === null) {
             return false;
         }
-
-        $tasksPage = $request->input('page', 1);
-        $noShowLeadsPage = $request->input('page_no_show_leads', 1);
-        $trialsLessThanMonthPage = $request->input('trials', 1);
-
-        $tasks = $this->getTasks($tasksPage);
-        $noShowLeads = $this->getNoShowLeads($noShowLeadsPage);
-        $trialLessThanMonth = $this->getTrialsLessThanMonth($trialsLessThanMonthPage);
-        $renewals = $this->getRenewals();
+        $tasks =  Task::with(['client:id,surname,name,birthdate,phone,email', 'userSender:id,name'])
+            ->where('director_id', auth()->user()->director_id)
+            ->orderBy('task_date')
+            ->paginate(50);
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
-            'noShowLeads' => $noShowLeads,
-            'trialLessThanMonth' => $trialLessThanMonth,
-            'renewals' => $renewals,
         ]);
     }
 
@@ -50,11 +43,17 @@ class TaskController extends Controller
     {
         $this->authorize('manage-tasks');
 
+        $today = now()->toDateString();
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'user_sender_id' => 'required|exists:users,id',
-            'task_date' => 'required|date',
+            'task_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'task_description' => 'required|string',
         ]);
 
@@ -76,6 +75,33 @@ class TaskController extends Controller
         return response()->json($tasks);
     }
 
+    public function update(Request $request, Task $task)
+    {
+        $this->authorize('manage-tasks');
+
+        $today = now()->toDateString();
+
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'director_id' => 'required|exists:users,id',
+            'user_sender_id' => 'required|exists:users,id',
+            'task_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
+            'task_description' => 'required|string',
+        ]);
+
+        if ($validated['director_id'] != auth()->user()->director_id) {
+            return redirect()->back()->withErrors(['director_id' => 'У вас нет прав на редактирование этой задачи.']);
+        }
+
+        $task->update($validated);
+
+        return redirect()->back()->with('success', 'Задача успешно обновлена!');
+    }
+
     public function destroy(Task $task)
     {
         $this->authorize('manage-tasks');
@@ -85,28 +111,36 @@ class TaskController extends Controller
         }
         $task->delete();
 
-        return redirect()->back();
+        return redirect()->back()->with('success', "Задача успешно удалена");
     }
 
-    private function getTasks($page)
+    public function noShowLeads(Request $request)
     {
-        return Task::with(['client:id,surname,name,birthdate,phone,email', 'userSender:id,name'])
-            ->where('director_id', auth()->user()->director_id)
-            ->orderBy('task_date')
-            ->paginate(50, ['*'], 'page', $page);
-    }
+        $this->authorize('manage-tasks');
 
-    private function getNoShowLeads($page)
-    {
-        return LeadAppointment::with(['client:id,surname,name,birthdate,phone,email'])
+        if (auth()->user()->director_id === null) {
+            return false;
+        }
+
+        $noShowLeads = LeadAppointment::with(['client:id,surname,name,birthdate,phone,email'])
             ->where('director_id', auth()->user()->director_id)
             ->where('status', 'no_show')
             ->orderBy('training_date')
-            ->paginate(50, ['*'], 'page_no_show_leads', $page);
+            ->paginate(50);
+
+        return Inertia::render('Tasks/NoShowLeads', [
+            'noShowLeads' => $noShowLeads,
+        ]);
     }
 
-    private function getTrialsLessThanMonth($page)
+    public function trialsLessThanMonth(Request $request)
     {
+        $this->authorize('manage-tasks');
+
+        if (auth()->user()->director_id === null) {
+            return false;
+        }
+
         $currentDate = now();
         $oneMonthAgo = $currentDate->subMonth();
         $directorId = auth()->user()->director_id;
@@ -128,30 +162,37 @@ class TaskController extends Controller
                     ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
-            ->paginate(50, ['*'], 'trials', $page);
+            ->paginate(50);
 
         // Получаем training_date для каждого клиента
         $trialClientsLessThanMonth->each(function ($client) use ($trialsLessThanMonth) {
             $client->training_date = $trialsLessThanMonth->where('client_id', $client->id)->first()->sale_date ?? null;
         });
-
-        return $trialClientsLessThanMonth;
+        return Inertia::render('Tasks/TrialsLessThanMonth', [
+            'trialsLessThanMonth' => $trialClientsLessThanMonth,
+        ]);
     }
 
-    private function getRenewals() {
+    public function renewals() {
+        $this->authorize('manage-tasks');
+
+        if (auth()->user()->director_id === null) {
+            return false;
+        }
+
         $currentDate = now();
 
-        // Получаем всех клиентов с абонементами, отсортированными по дате окончания
+        // Получаем всех клиентов с групповыми абонементами от 1 месяца и больше
         $clients = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', false)
             ->whereHas('sales', function ($query) use ($currentDate) {
                 $query->whereIn('service_type', ['group', 'minigroup'])
-                    ->where('subscription_duration', '!=', 0.03); // Исключаем записи с разовыми
+                    ->where('subscription_duration', '>=', 1); // Абонементы от 1 месяца и больше
             })
             ->with(['sales' => function ($query) use ($currentDate) {
-                $query->select('client_id', 'subscription_end_date', 'service_type')
+                $query->select('client_id', 'subscription_end_date', 'service_type', 'subscription_duration')
                     ->whereIn('service_type', ['group', 'minigroup'])
-                    ->where('subscription_duration', '!=', 0.03) // Исключаем записи с разовыми
+                    ->where('subscription_duration', '>=', 1) // Абонементы от 1 месяца и больше
                     ->orderBy('subscription_end_date', 'desc')
                     ->limit(1);
             }])
@@ -163,15 +204,6 @@ class TaskController extends Controller
             $subscriptionEndDate = $client->sales->first()->subscription_end_date ?? null;
 
             if ($subscriptionEndDate === null) {
-                return false;
-            }
-
-            // Проверяем, есть ли у клиента хотя бы один действующий абонемент
-            $hasActiveSubscription = Sale::where('client_id', $client->id)
-                ->where('subscription_end_date', '>', $currentDate)
-                ->where('subscription_duration', '!=', 0.03) // Исключаем записи с разовыми
-                ->exists();
-            if ($hasActiveSubscription) {
                 return false;
             }
 
@@ -192,12 +224,18 @@ class TaskController extends Controller
         $clientsToRenewal->each(function ($client) {
             $client->subscription_end_date = $client->sales->first()->subscription_end_date ?? null;
             $client->service_type = $client->sales->first()->service_type ?? null;
+            $client->subscription_duration = $client->sales->first()->subscription_duration ?? null;
         });
 
-        // Пагинация на стороне сервера
-        $paginatedClients = $this->serverPaginate($clientsToRenewal);
+        // Сортируем клиентов по наиболее ближайшей дате окончания абонемента
+        $clientsToRenewal = $clientsToRenewal->sortBy('subscription_end_date');
 
-        return $paginatedClients;
+        // Пагинация на стороне сервера
+        $paginatedRenewals = $this->serverPaginate($clientsToRenewal);
+
+        return Inertia::render('Tasks/Renewals', [
+            'clientsToRenewal' => $paginatedRenewals,
+        ]);
     }
 
     private function serverPaginate($items)
