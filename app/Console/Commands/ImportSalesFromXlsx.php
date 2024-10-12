@@ -84,12 +84,12 @@ class ImportSalesFromXlsx extends Command
         try {
             foreach ($rows as $index => $row) {
                 try {
-//                    // Проверка, что поле name не пустое
-//                    if (empty($row[1])) {
-//                        $skippedCount++;
-//                        $skippedRows[] = $index + 2;
-//                        continue;
-//                    }
+                    // Проверка, что поле name не пустое
+                    if (empty($row[1])) {
+                        $skippedCount++;
+                        $skippedRows[] = $index + 2;
+                        continue;
+                    }
                     // Создаем или находим клиента
                     $client = Client::firstOrCreate(
                         [
