@@ -4,15 +4,15 @@ import ClientModal from "@/Components/ClientModal.vue";
 import {ref} from "vue";
 import Pagination from "@/Components/Pagination.vue";
 import {useToast} from "@/useToast.js";
-import {Head} from "@inertiajs/vue3";
+import {Head, useForm} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
 const {showToast} = useToast();
 
 const props = defineProps({
-    clientsToRenewal: {
-        type: Object,
-    },
+    clientsToRenewal: Object,
+    filter: String,
+    date: String,
 });
 
 const showModal = ref(false);
@@ -35,6 +35,23 @@ const closeModal = () => {
     showModal.value = false;
     selectedClient.value = null;
 };
+
+const form = useForm({
+    filter: props.filter,
+    date: props.date
+});
+
+const sortBy = (field, value) => {
+    if (field === 'end_date') {
+        form.date = value;
+    } else {
+        form.filter = field === 'filter' ? value : form.filter;
+    }
+    form.get(route('tasks.renewals'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -45,6 +62,16 @@ const closeModal = () => {
             <h3 class="mb-4 text-lg font-medium text-gray-900">Список клиентов с абонементом истекающим и истекшим в
                 течении
                 1-го месяца</h3>
+            <div class="mb-4 flex justify-between items-center">
+                <div>
+                    <label for="role" class="mr-2">Сортировать по:</label>
+                    <select id="role" v-model="form.filter" @change="sortBy('filter', $event.target.value)"
+                            class="p-1 px-2 pe-8 border border-gray-300 rounded-md">
+                        <option value="expired">Истекшим в течении 1-го месяца</option>
+                        <option value="upcoming">Истекающим в течении недели</option>
+                    </select>
+                </div>
+            </div>
             <table v-if="clientsToRenewal && clientsToRenewal.data" class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                 <tr>
@@ -62,7 +89,20 @@ const closeModal = () => {
                         Абонемент
                     </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Истек/(ает)
+                        <div class="flex align-middle items-center">
+                            <span v-if="form.filter === 'expired'">Истек</span>
+                            <span v-else-if="form.filter === 'upcoming'">Истекает</span>
+                            <button @click="sortBy('end_date', date === 'asc' ? 'desc' : 'asc')">
+                                     <span>
+                                         <svg width="20" version="1.1"
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              xmlns:xlink="http://www.w3.org/1999/xlink"
+                                              viewBox="0 0 16 16"><path
+                                             fill="#444444" d="M11 7h-6l3-4z"/><path
+                                             fill="#444444" d="M5 9h6l-3 4z"/></svg>
+                                    </span>
+                            </button>
+                        </div>
                     </th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Действия

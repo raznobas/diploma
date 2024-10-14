@@ -32,7 +32,7 @@ class ImportSalesFromXlsx extends Command
      */
     public function handle()
     {
-        $filePath = storage_path('20241003подготовкакЦРМ(1).xlsx');
+        $filePath = storage_path('20241003подготовкакЦРМ(for_test).xlsx');
 
         if (!file_exists($filePath)) {
             $this->error("File not found: $filePath");
