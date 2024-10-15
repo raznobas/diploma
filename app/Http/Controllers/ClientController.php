@@ -133,6 +133,7 @@ class ClientController extends Controller
         }
 
         $clients = Client::select('id', 'name', 'surname', 'patronymic', 'phone', 'ad_source', 'is_lead')
+            ->where('director_id', auth()->user()->director_id) // Ограничиваем поиск по director_id
             ->when($isLead !== null, function ($q) use ($isLead) {
                 return $q->where('is_lead', $isLead);
             })
