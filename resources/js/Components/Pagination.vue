@@ -6,6 +6,9 @@
                       :class="{ 'bg-gray-800 text-white': link.active }"/>
             </li>
         </ul>
+        <div v-if="items && items.total" class="mt-3 text-center">
+            Всего записей: {{ items.total }}
+        </div>
     </nav>
 </template>
 

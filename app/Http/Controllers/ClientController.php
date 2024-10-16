@@ -228,8 +228,11 @@ class ClientController extends Controller
             $client->subscription_end_date = $client->sales->first()->subscription_end_date ?? null;
         });
 
+        // Сортируем клиентов по subscription_end_date в порядке убывания
+        $sortedCollection = $oldClients->sortByDesc('subscription_end_date')->values();
+
         // Пагинация на стороне сервера
-        $paginatedClients = $this->serverPaginate($oldClients);
+        $paginatedClients = $this->serverPaginate($sortedCollection);
 
         return Inertia::render('Clients/Old', [
             'oldClients' => $paginatedClients,
@@ -245,7 +248,7 @@ class ClientController extends Controller
         }
 
         $currentDate = now();
-        $oneMonthAgo = $currentDate->subMonth();
+        $oneMonthAgo = (clone $currentDate)->subMonth();
         $directorId = auth()->user()->director_id;
 
         // Получаем все пробные тренировки, которые были более месяца назад и относятся к текущему director_id
@@ -265,15 +268,26 @@ class ClientController extends Controller
                     ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
-            ->paginate(50);
+            ->with(['sales' => function ($query) use ($oneMonthAgo, $directorId) {
+                $query->where('sale_date', '<', $oneMonthAgo)
+                    ->where('service_type', '=', 'trial')
+                    ->where('director_id', $directorId);
+            }])
+            ->get();
 
         // Получаем training_date для каждого клиента
-        $trialClients->each(function ($client) use ($trials) {
-            $client->training_date = $trials->where('client_id', $client->id)->first()->sale_date ?? null;
+        $trialClients->each(function ($client) {
+            $client->training_date = $client->sales->first()->sale_date ?? null;
         });
 
+        // Сортируем клиентов по training_date в порядке убывания
+        $sortedCollection = $trialClients->sortByDesc('training_date')->values();
+
+        // Применяем пагинацию после сортировки
+        $paginatedTrialClients = $this->serverPaginate($sortedCollection);
+
         return Inertia::render('Clients/Trials', [
-            'trialClients' => $trialClients,
+            'trialClients' => $paginatedTrialClients,
         ]);
     }
 

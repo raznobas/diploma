@@ -144,7 +144,7 @@ class TaskController extends Controller
         }
 
         $currentDate = now();
-        $oneMonthAgo = $currentDate->subMonth();
+        $oneMonthAgo = (clone $currentDate)->subMonth();
         $directorId = auth()->user()->director_id;
 
         // Получаем все пробные тренировки, которые были менее месяца назад и относятся к текущему director_id
@@ -164,14 +164,26 @@ class TaskController extends Controller
                     ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
-            ->paginate(50);
+            ->with(['sales' => function ($query) use ($oneMonthAgo, $directorId) {
+                $query->where('sale_date', '>=', $oneMonthAgo)
+                    ->where('service_type', '=', 'trial')
+                    ->where('director_id', $directorId);
+            }])
+            ->get();
 
         // Получаем training_date для каждого клиента
-        $trialClientsLessThanMonth->each(function ($client) use ($trialsLessThanMonth) {
-            $client->training_date = $trialsLessThanMonth->where('client_id', $client->id)->first()->sale_date ?? null;
+        $trialClientsLessThanMonth->each(function ($client) {
+            $client->training_date = $client->sales->first()->sale_date ?? null;
         });
+
+        // Сортируем клиентов по training_date в порядке убывания
+        $sortedCollection = $trialClientsLessThanMonth->sortByDesc('training_date')->values();
+
+        // Применяем пагинацию после сортировки
+        $paginatedTrialClients = $this->serverPaginate($sortedCollection);
+
         return Inertia::render('Tasks/TrialsLessThanMonth', [
-            'trialsLessThanMonth' => $trialClientsLessThanMonth,
+            'trialsLessThanMonth' => $paginatedTrialClients,
         ]);
     }
 
