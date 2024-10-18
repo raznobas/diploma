@@ -127,6 +127,9 @@ class TaskController extends Controller
         $noShowLeads = LeadAppointment::with(['client:id,surname,name,birthdate,phone,email'])
             ->where('director_id', auth()->user()->director_id)
             ->where('status', 'no_show')
+            ->whereHas('client', function ($query) {
+                $query->where('is_lead', true);
+            })
             ->orderBy('training_date')
             ->paginate(50);
 
