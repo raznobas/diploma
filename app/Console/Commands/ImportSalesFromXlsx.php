@@ -18,7 +18,7 @@ class ImportSalesFromXlsx extends Command
      *
      * @var string
      */
-    protected $signature = 'app:import-sales-from-xlsx';
+    protected $signature = 'app:import-sales-from-xlsx {file : The path to the XLSX file}';
 
     /**
      * The console command description.
@@ -32,7 +32,8 @@ class ImportSalesFromXlsx extends Command
      */
     public function handle()
     {
-        $filePath = storage_path('20241003подготовкакЦРМ(for_test).xlsx');
+        // Получаем путь к файлу из аргумента команды
+        $filePath = $this->argument('file');
 
         if (!file_exists($filePath)) {
             $this->error("File not found: $filePath");
@@ -196,9 +197,6 @@ class ImportSalesFromXlsx extends Command
                 }
             }
 
-            DB::commit();
-
-            $this->info("Sales data imported successfully.");
             $this->info("Imported rows: $importedCount");
             $this->info("Skipped rows: $skippedCount");
             $this->info("Total clients created: $clientCount"); // Вывод количества созданных клиентов
@@ -206,6 +204,14 @@ class ImportSalesFromXlsx extends Command
 
             if (!empty($skippedRows)) {
                 $this->info("Skipped rows numbers: " . implode(', ', $skippedRows));
+            }
+
+            if ($this->confirm('Are you sure you want to import this data?', false)) {
+                DB::commit();
+                $this->info("Sales data imported successfully.");
+            } else {
+                DB::rollBack();
+                $this->info("Import operation cancelled by user.");
             }
         } catch (\Exception $e) {
             DB::rollBack();
