@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Client;
 use App\Models\ClientStatus;
+use App\Models\Gym;
 use App\Models\LeadAppointment;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Silber\Bouncer\Bouncer;
 
@@ -23,7 +25,7 @@ class LeadController extends Controller
         $this->bouncer = $bouncer;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, FilterController $filterController)
     {
         $this->authorize('manage-leads');
 
@@ -34,16 +36,28 @@ class LeadController extends Controller
         $leadsPage = $request->input('page', 1);
         $leadAppointmentsPage = $request->input('page_appointments', 1);
 
-        $leads = Client::where('director_id', auth()->user()->director_id)
-            ->where('is_lead', true)
-            ->orderBy('created_at', 'desc')
-            ->paginate(50, ['*'], 'page', $leadsPage);
+        $routeName = Route::currentRouteName();
 
-        $leadAppointments = LeadAppointment::where('director_id', auth()->user()->director_id)
+        // Основной запрос для лидов
+        $leadsQuery = Client::where('director_id', auth()->user()->director_id)
+            ->where('is_lead', true)
+            ->orderBy('created_at', 'desc');
+
+        // Применяем фильтры через FilterController
+        $filterController->applyFilters($leadsQuery, $request, $routeName);
+
+        $leads = $leadsQuery->paginate(50, ['*'], 'page', $leadsPage);
+
+        // Запрос для записей на тренировку
+        $leadAppointmentsQuery = LeadAppointment::where('director_id', auth()->user()->director_id)
             ->where('status', 'scheduled')
             ->with('client:id,name,surname,patronymic,phone,ad_source')
-            ->orderBy('training_date', 'desc')
-            ->paginate(50, ['*'], 'page_appointments', $leadAppointmentsPage);
+            ->orderBy('training_date', 'desc');
+
+        // Применяем фильтры для записей на тренировку
+        $filterController->applyLeadAppointmentFilters($leadAppointmentsQuery, $request);
+
+        $leadAppointments = $leadAppointmentsQuery->paginate(50, ['*'], 'page_appointments', $leadAppointmentsPage);
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
 
@@ -53,7 +67,8 @@ class LeadController extends Controller
             'categories' => $categories,
             'leads' => $leads,
             'leadAppointments' => $leadAppointments,
-            'person' => $person
+            'person' => $person,
+            'filter' => $request->all()
         ]);
     }
 
@@ -148,4 +163,39 @@ class LeadController extends Controller
         return redirect()->back()->with('success', "Запись успешно удалена");
     }
 
+    public function api_store(Request $request)
+    {
+        // Валидация входных данных
+        $validated = $request->validate([
+            'gym_name' => 'string|max:255',
+            'client_name' => 'required|string|max:255',
+            'client_phone' => 'required|string|max:20',
+        ]);
+
+        // Получаем данные из запроса
+        $gymName = $validated['gym_name'];
+        $clientName = $validated['client_name'];
+        $clientPhone = $validated['client_phone'];
+
+        // Ищем зал по названию с использованием модели Gym
+        $gym = Gym::where('name', $gymName)->first();
+
+        // Если зал не найден, возвращаем ошибку
+        if (!$gym) {
+            return response()->json(['error' => 'Зал не найден'], 404);
+        }
+
+        $lead = Client::create([
+            'name' => $clientName,
+            'phone' => $clientPhone,
+            'is_lead' => true,
+            'director_id' => $gym->director_id,
+        ]);
+
+        // Возвращаем успешный ответ
+        return response()->json([
+            'message' => 'Лид успешно создан',
+            'id' => $lead->id,
+        ], 201);
+    }
 }

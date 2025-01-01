@@ -91,45 +91,46 @@ const submitEditTask = () => {
     <Head title="Задачи"/>
 
     <AuthenticatedLayout>
-        <div class="mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <div>
                 <h3 class="mb-4 text-lg font-medium text-gray-900">Список всех задач по всем клиентам/лидам</h3>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Дата
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Описание задачи
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Отправитель
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Действия
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="task in tasks.data" :key="task.id">
-                        <td class="px-3 py-2 whitespace-nowrap">{{ task.id }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            {{ task.task_date ? dayjs(task.task_date).format('DD.MM.YYYY') : '' }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-normal">
-                            {{ task.task_description }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-normal">
-                            {{ task.user_sender.name }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <button @click="openModal(task.client.id)" class="text-indigo-600 hover:text-indigo-900">
-                                Карточка
-                            </button>
-                            <span class="ms-4">
+                <div class="max-lg:overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Дата
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Описание задачи
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Отправитель
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Действия
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="task in tasks.data" :key="task.id">
+                            <td class="px-3 py-2 whitespace-nowrap">{{ task.id }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ task.task_date ? dayjs(task.task_date).format('DD.MM.YYYY') : '' }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-normal">
+                                {{ task.task_description }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-normal">
+                                {{ task.user_sender.name }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <button @click="openModal(task.client.id)" class="text-indigo-600 hover:text-indigo-900">
+                                    Карточка
+                                </button>
+                                <span class="ms-4">
                                 <button title="Редактировать" type="button" @click="openEditModal(task)" class="px-1">
                                     <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
                                 </button>
@@ -137,11 +138,12 @@ const submitEditTask = () => {
                                     <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
                                 </button>
                             </span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                <Pagination :items="tasks"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <Pagination :items="tasks"/>
+                </div>
             </div>
             <Modal :show="showTaskEdit" @close="showTaskEdit = false">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">

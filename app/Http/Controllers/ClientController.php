@@ -9,6 +9,7 @@ use App\Models\LeadAppointment;
 use App\Models\Sale;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Silber\Bouncer\Bouncer;
 
@@ -23,26 +24,36 @@ class ClientController extends Controller
         $this->bouncer = $bouncer;
     }
 
-    public function index()
+    public function index(Request $request, FilterController $filterController)
     {
         $this->authorize('manage-sales');
+
         if (auth()->user()->director_id === null) {
             return false;
         }
 
-        $clients = Client::where('director_id', auth()->user()->director_id)
+        $routeName = Route::currentRouteName();
+
+        // Основной запрос
+        $query = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', false)
             ->orderBy('created_at', 'desc')
-            ->select('id', 'surname', 'name', 'patronymic', 'birthdate', 'phone', 'email')
-            ->paginate(50);
+            ->select('id', 'surname', 'name', 'patronymic', 'birthdate', 'phone', 'email');
 
+        // Применяем фильтры через FilterController
+        $filterController->applyFilters($query, $request, $routeName);
+
+        $clients = $query->paginate(50, ['*'], 'page', $request->input('page', 1));
+
+        // Получаем источники
         $source_options = Category::where('director_id', auth()->user()->director_id)
             ->where('type', 'ad_source')
             ->get();
 
         return Inertia::render('Clients/Index', [
             'clients' => $clients,
-            'source_options' => $source_options
+            'source_options' => $source_options,
+            'filter' => $request->all(),
         ]);
     }
 

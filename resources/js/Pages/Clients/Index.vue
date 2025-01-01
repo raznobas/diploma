@@ -9,6 +9,7 @@ import Pagination from "@/Components/Pagination.vue";
 import ClientModal from "@/Components/ClientModal.vue";
 import dayjs from "dayjs";
 import { useToast } from "@/useToast";
+import Filters from "@/Components/Filters.vue";
 const { showToast } = useToast();
 
 const form = useForm({
@@ -28,7 +29,7 @@ const form = useForm({
     director_id: usePage().props.auth.director_id,
 });
 
-const props = defineProps(['clients', 'source_options']);
+const props = defineProps(['clients', 'source_options', 'filter']);
 
 const submit = () => {
     form.post(route('clients.store'), {
@@ -64,13 +65,75 @@ const closeModal = () => {
     selectedClient.value = null;
 };
 
+// фильтрация-поиск по клиентам
+const fields = [
+    { name: 'client_name', label: 'Имя/Фамилия', type: 'text' },
+    { name: 'patronymic', label: 'Отчество', type: 'text' },
+    { name: 'birthdate', label: 'Дата рождения', type: 'date' },
+    { name: 'workplace', label: 'Место работы', type: 'text' },
+    { name: 'phone', label: 'Телефон', type: 'text' },
+    { name: 'email', label: 'Email', type: 'email' },
+    { name: 'telegram', label: 'Telegram', type: 'text' },
+    { name: 'instagram', label: 'Instagram', type: 'text' },
+    { name: 'address', label: 'Адрес', type: 'text' },
+    { name: 'gender', label: 'Пол', type: 'select', options: [
+            { value: '', label: 'Любой' },
+            { value: 'male', label: 'М' },
+            { value: 'female', label: 'Ж' }
+        ]},
+    { name: 'ad_source', label: 'Источник рекламы', type: 'text' }
+];
+
+const filterForm = useForm({
+    ...Object.fromEntries(
+        fields.map((field) => [field.name, (props.filter && props.filter[field.name]) || ''])
+    ),
+    page: props.filter.page || 1,
+});
+
+let searchTimeout = null;
+
+const updateFilterForm = (field, value) => {
+    filterForm[field] = value;
+    filterForm.page = 1;
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        filterForm.get(route('clients.index'), {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, 1000);
+};
+
+const resetFilters = () => {
+    Reflect.ownKeys(filterForm).forEach(key => {
+        if (typeof filterForm[key] !== 'function') {
+            filterForm[key] = '';
+        }
+    });
+    filterForm.page = 1;
+    filterForm.get(route('clients.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const changePage = (page) => {
+    filterForm.page = page;
+    filterForm.get(route('clients.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
 </script>
 
 <template>
     <Head title="Клиенты"/>
 
     <AuthenticatedLayout>
-        <div class="mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <form @submit.prevent="submit">
                 <div class="flex flex-row flex-wrap gap-2 items-end">
                     <div class="flex flex-col">
@@ -141,41 +204,49 @@ const closeModal = () => {
                         <InputError :message="form.errors.ad_source" class="mt-2 text-sm text-red-600"/>
                     </div>
                 </div>
-                <div class="mt-4">
+                <div class="mt-4 flex">
                     <PrimaryButton :disabled="form.processing">Добавить клиента</PrimaryButton>
                     <SecondaryButton class="ml-2" type="button" @click="form.reset()">Очистить</SecondaryButton>
                 </div>
             </form>
             <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список клиентов вашей организации</h3>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Фамилия</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Отчество</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата рождения</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="client in clients.data" :key="client.id">
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.surname }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.name }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.patronymic }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                        {{ client.birthdate ? dayjs(client.birthdate).format('DD.MM.YYYY') : '' }}
-                    </td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.phone }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ client.email }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                        <button @click="openModal(client.id)" class="text-indigo-600 hover:text-indigo-900">Карточка</button>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-            <Pagination :items="clients" />
+            <Filters
+                :fields="fields"
+                :filterForm="filterForm"
+                @update:filterForm="updateFilterForm"
+                @resetFilters="resetFilters"
+            />
+            <div class="max-lg:overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Фамилия</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Отчество</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата рождения</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="client in clients.data" :key="client.id">
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.surname }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.name }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.patronymic }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                            {{ client.birthdate ? dayjs(client.birthdate).format('DD.MM.YYYY') : '' }}
+                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.phone }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.email }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                            <button @click="openModal(client.id)" class="text-indigo-600 hover:text-indigo-900">Карточка</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <Pagination :items="clients" @change-page="changePage" />
+            </div>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated" />
         </div>

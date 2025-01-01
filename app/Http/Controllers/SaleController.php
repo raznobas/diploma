@@ -11,6 +11,7 @@ use App\Models\LeadAppointment;
 use App\Models\Sale;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Silber\Bouncer\Bouncer;
 
@@ -25,22 +26,27 @@ class SaleController extends Controller
         $this->bouncer = $bouncer;
     }
 
-    public function index()
+    public function index(Request $request, FilterController $filterController)
     {
         $this->authorize('manage-sales');
 
         if (auth()->user()->director_id === null) {
             return false;
         }
-        $sales = Sale::where('director_id', auth()->user()->director_id)
-            ->with(['client:id,name,surname,patronymic,is_lead'])
-            ->orderBy('sale_date', 'desc')
+
+        $routeName = Route::currentRouteName();
+
+        $query = Sale::where('director_id', auth()->user()->director_id)
+            ->with(['client:id,name,surname,patronymic,is_lead']);
+
+        $filterController->applyFilters($query, $request, $routeName);
+
+        $sales = $query->orderBy('sale_date', 'desc')
             ->orderBy('created_at', 'desc')
-            ->paginate(50);
+            ->paginate(50, ['*'], 'page', $request->input('page', 1));
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
 
-        // Получаем все настройки стоимости
         $categoryCosts = CategoryCost::with('additionalCosts')
             ->where('director_id', auth()->user()->director_id)
             ->get();
@@ -50,7 +56,8 @@ class SaleController extends Controller
             'categories' => $categories,
             'categoryCosts' => $categoryCosts,
             'sales' => $sales,
-            'person' => $person
+            'person' => $person,
+            'filter' => $request->all(),
         ]);
     }
 

@@ -1,7 +1,7 @@
 <script setup>
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import InputError from "@/Components/InputError.vue";
-import {Head, useForm, usePage} from "@inertiajs/vue3";
+import {Head, router, useForm, usePage} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import {computed, ref, watch} from "vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
@@ -14,10 +14,11 @@ import {useToast} from "@/useToast";
 import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
 import SaleEditForm from "@/Components/SaleEditForm.vue";
+import Filters from "@/Components/Filters.vue";
 
 const {showToast} = useToast();
 
-const props = defineProps(['categories', 'categoryCosts', 'sales', 'person']);
+const props = defineProps(['categories', 'categoryCosts', 'sales', 'person', 'filter']);
 
 const form = useForm({
     sale_date: new Date().toISOString().split('T')[0],
@@ -150,7 +151,7 @@ const calculateEndDate = () => {
                 break;
             case '1':
                 endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 30);
+                endDate.setDate(startDate.getDate() + 29);
                 break;
             case '3':
                 endDate = new Date(startDate);
@@ -316,13 +317,81 @@ const deleteSale = (saleId) => {
         }
     }
 };
+
+// фильтрация-поиск по продажам
+const fields = [
+    { name: 'client_name', label: 'Имя/Фамилия', type: 'text' },
+    { name: 'sport_type', label: 'Вид спорта', type: 'text' },
+    { name: 'product_type', label: 'Вид товара', type: 'text' },
+    { name: 'service_type', label: 'Вид услуги', type: 'select', options: [
+            { value: '', label: 'Все' },
+            { value: 'trial', label: 'Пробная' },
+            { value: 'group', label: 'Групповая' },
+            { value: 'minigroup', label: 'Минигруппа' },
+            { value: 'individual', label: 'Индивидуальная' },
+            { value: 'split', label: 'Сплит' }
+        ]},
+    { name: 'subscription_duration', label: 'Абонемент', type: 'text' },
+    { name: 'visits_per_week', label: 'Посещ. в нед.', type: 'text' },
+    { name: 'trainer', label: 'Тренер', type: 'text' },
+    { name: 'training_count', label: 'Трен-вок', type: 'text' },
+    { name: 'pay_method', label: 'Способ оплаты', type: 'text' },
+    { name: 'comment', label: 'Комментарий', type: 'text' },
+    { name: 'date_from', label: 'Дата от', type: 'date' },
+    { name: 'date_to', label: 'Дата до', type: 'date' },
+    { name: 'subscription_start_date', label: 'Начало абонем.', type: 'date' },
+    { name: 'subscription_end_date', label: 'Конец абонем.', type: 'date' }
+];
+
+const filterForm = useForm({
+    ...Object.fromEntries(
+        fields.map((field) => [field.name, (props.filter && props.filter[field.name]) || ''])
+    ),
+    page: props.filter.page || 1,
+});
+
+let searchTimeout = null;
+
+const updateFilterForm = (field, value) => {
+    filterForm[field] = value;
+    filterForm.page = 1;
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        filterForm.get(route('sales.index'), {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, 1000);
+};
+
+const resetFilters = () => {
+    Reflect.ownKeys(filterForm).forEach(key => {
+        if (typeof filterForm[key] !== 'function') {
+            filterForm[key] = '';
+        }
+    });
+    filterForm.page = 1;
+    filterForm.get(route('sales.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const changePage = (page) => {
+    filterForm.page = page;
+    filterForm.get(route('sales.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
     <Head title="Продажи"/>
 
     <AuthenticatedLayout>
-        <div class="mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <h3 class="mb-4">Для работы с продажами директору нужно настроить категории во вкладке "Настройка
                 категорий".</h3>
             <PrimaryButton type="button" @click="showLeadModal = true;">+ Новый клиент</PrimaryButton>
@@ -530,7 +599,7 @@ const deleteSale = (saleId) => {
                         <InputError :message="form.errors.comment" class="mt-2 text-sm text-red-600"/>
                     </div>
                 </div>
-                <div class="mt-4">
+                <div class="mt-4 flex">
                     <PrimaryButton :disabled="form.processing">Добавить продажу</PrimaryButton>
                     <SecondaryButton class="ml-2" type="button"
                                      @click="() => { form.reset(); selectedClientCard = null }">Очистить
@@ -542,8 +611,14 @@ const deleteSale = (saleId) => {
             <SaleEditForm :show="showSaleModal" :sale="selectedSale" :categories="categories" :categoryCosts="categoryCosts" @update="updateSale" @close="closeModal"/>
             <div>
                 <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список всех продаж вашей организации</h3>
+                <Filters
+                    :fields="fields"
+                    :filterForm="filterForm"
+                    @update:filterForm="updateFilterForm"
+                    @resetFilters="resetFilters"
+                />
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -657,7 +732,7 @@ const deleteSale = (saleId) => {
                         </tbody>
                     </table>
                 </div>
-                <Pagination :items="sales"/>
+                <Pagination :items="sales" @change-page="changePage" />
             </div>
         </div>
     </AuthenticatedLayout>

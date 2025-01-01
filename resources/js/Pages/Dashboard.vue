@@ -1,6 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import {Head, usePage} from '@inertiajs/vue3';
+
+const gym = usePage().props.auth.gym;
 </script>
 
 <template>
@@ -13,8 +15,9 @@ import { Head } from '@inertiajs/vue3';
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">Вы вошли!</div>
+                <div class="bg-white p-6 overflow-hidden shadow-sm sm:rounded-lg">
+                    <h2 v-if="gym" class="text-lg font-medium text-gray-900 mb-3">Зал: {{ gym.label }}</h2>
+                    <div class="text-gray-900">Вы вошли!</div>
                 </div>
             </div>
         </div>

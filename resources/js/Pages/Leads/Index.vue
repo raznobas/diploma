@@ -17,10 +17,11 @@ dayjs.extend(customParseFormat);
 import Pagination from "@/Components/Pagination.vue";
 import {useToast} from "@/useToast";
 import axios from "axios";
+import Filters from "@/Components/Filters.vue";
 
 const {showToast} = useToast();
 
-const props = defineProps(['categories', 'leads', 'leadAppointments', 'person']);
+const props = defineProps(['categories', 'leads', 'leadAppointments', 'person', 'filter']);
 
 const form = useForm({
     id: null, // символизирует о том, что активно редактирование
@@ -170,13 +171,138 @@ const deleteAppointment = async (appointmentId) => {
     }
 };
 
+// фильтрация-поиск
+const fields = [
+    { name: 'client_name', label: 'Имя/Фамилия', type: 'text' },
+    { name: 'patronymic', label: 'Отчество', type: 'text' },
+    { name: 'birthdate', label: 'Дата рождения', type: 'date' },
+    { name: 'workplace', label: 'Место работы', type: 'text' },
+    { name: 'phone', label: 'Телефон', type: 'text' },
+    { name: 'email', label: 'Email', type: 'email' },
+    { name: 'telegram', label: 'Telegram', type: 'text' },
+    { name: 'instagram', label: 'Instagram', type: 'text' },
+    { name: 'address', label: 'Адрес', type: 'text' },
+    { name: 'gender', label: 'Пол', type: 'select', options: [
+            { value: '', label: 'Любой' },
+            { value: 'male', label: 'М' },
+            { value: 'female', label: 'Ж' }
+        ]},
+    { name: 'ad_source', label: 'Источник рекламы', type: 'text' }
+];
+
+const fieldsAppointments = [
+    { name: 'client_name_book', label: 'Имя/Фамилия', type: 'text' },
+    { name: 'sport_type', label: 'Вид спорта', type: 'text' },
+    { name: 'service_type', label: 'Вид услуги', type: 'select', options: [
+            { value: '', label: 'Все' },
+            { value: 'group', label: 'Групповая' },
+            { value: 'minigroup', label: 'Минигруппа' },
+            { value: 'individual', label: 'Индивидуальная' },
+            { value: 'split', label: 'Сплит' }
+        ]},
+    { name: 'trainer', label: 'Тренер', type: 'text' },
+    { name: 'training_date', label: 'Дата тренировки', type: 'date' }
+];
+
+const filterForm = useForm({
+    ...Object.fromEntries(
+        fields.map((field) => [field.name, (props.filter && props.filter[field.name]) || ''])
+    ),
+    page: props.filter.page || 1,
+});
+
+const filterFormAppointments = useForm({
+    ...Object.fromEntries(
+        fieldsAppointments.map((field) => [field.name, (props.filter && props.filter[field.name]) || ''])
+    ),
+    page_appointments: props.filter.page_appointments || 1,
+});
+
+let searchTimeout = null;
+let searchTimeoutAppointments = null;
+
+// Универсальные функции
+const updateForm = (form, field, value, pageField, routeName, timeoutRef, delay = 1000) => {
+    form[field] = value;
+    form[pageField] = 1;
+
+    clearTimeout(timeoutRef);
+    timeoutRef = setTimeout(() => {
+        form.get(route(routeName), {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, delay);
+};
+
+const updateFilterForm = (field, value) => {
+    // Сбрасываем вторую форму
+    resetForm(filterFormAppointments);
+    filterFormAppointments.page_appointments = 1;
+
+    // Обновляем текущую форму
+    updateForm(filterForm, field, value, 'page', 'leads.index', searchTimeout);
+};
+
+const updateFilterFormAppointments = (field, value) => {
+    // Сбрасываем первую форму
+    resetForm(filterForm);
+    filterForm.page = 1;
+
+    // Обновляем текущую форму
+    updateForm(filterFormAppointments, field, value, 'page_appointments', 'leads.index', searchTimeoutAppointments);
+};
+
+const resetFilters = () => {
+    resetForm(filterForm);
+    filterForm.page = 1;
+    filterForm.get(route('leads.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const resetFiltersAppointments = () => {
+    resetForm(filterFormAppointments);
+    filterFormAppointments.page_appointments = 1;
+    filterFormAppointments.get(route('leads.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const changePage = (page) => {
+    // Сбрасываем вторую форму
+    resetForm(filterFormAppointments);
+    filterFormAppointments.page_appointments = 1;
+
+    // Обновляем текущую форму
+    changePage(filterForm, 'page', page, 'leads.index');
+};
+
+const changePageAppointments = (page) => {
+    // Сбрасываем первую форму
+    resetForm(filterForm);
+    filterForm.page = 1;
+
+    // Обновляем текущую форму
+    changePage(filterFormAppointments, 'page_appointments', page, 'leads.index');
+};
+
+const resetForm = (form) => {
+    Reflect.ownKeys(form).forEach(key => {
+        if (typeof form[key] !== 'function') {
+            form[key] = '';
+        }
+    });
+};
 </script>
 
 <template>
     <Head title="Лиды"/>
 
     <AuthenticatedLayout>
-        <div class="mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <PrimaryButton type="button" @click="showLeadModal = true;">+ Новый лид</PrimaryButton>
             <Modal :show="showLeadModal" @close="closeModal">
                 <ClientLeadForm :is-lead="true" @submit="createLead"/>
@@ -293,52 +419,59 @@ const deleteAppointment = async (appointmentId) => {
                          @close="closeModal" @client-updated="handleClientUpdated"/>
             <div>
                 <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Записи на пробную тренировку</h3>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
-                            спорта
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
-                            услуги
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Тренер
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Дата/время тренировки
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Действия
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="appointment in leadAppointments.data" :key="appointment.id">
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            {{ appointment.client?.surname }} {{ appointment.client?.name }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ appointment.sport_type }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <span v-if="appointment.service_type === 'group'">Групповая</span>
-                            <span v-else-if="appointment.service_type === 'minigroup'">Минигруппа</span>
-                            <span v-else-if="appointment.service_type === 'individual'">Индивидуальная</span>
-                            <span v-else-if="appointment.service_type === 'split'">Сплит</span>
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ appointment.trainer }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            {{ appointment.training_date ? dayjs(appointment.training_date).format('DD.MM.YYYY') : '' }}
-                            <span v-if="appointment.training_time">/
+                <Filters
+                    :fields="fieldsAppointments"
+                    :filterForm="filterFormAppointments"
+                    @update:filterForm="updateFilterFormAppointments"
+                    @resetFilters="resetFiltersAppointments"
+                />
+                <div class="max-lg:overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
+                                спорта
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
+                                услуги
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Тренер
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Дата/время тренировки
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Действия
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="appointment in leadAppointments.data" :key="appointment.id">
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ appointment.client?.surname }} {{ appointment.client?.name }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ appointment.sport_type }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <span v-if="appointment.service_type === 'group'">Групповая</span>
+                                <span v-else-if="appointment.service_type === 'minigroup'">Минигруппа</span>
+                                <span v-else-if="appointment.service_type === 'individual'">Индивидуальная</span>
+                                <span v-else-if="appointment.service_type === 'split'">Сплит</span>
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ appointment.trainer }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ appointment.training_date ? dayjs(appointment.training_date).format('DD.MM.YYYY') : '' }}
+                                <span v-if="appointment.training_time">/
                               {{ dayjs(appointment.training_time, "HH:mm:ss").format('HH:mm') }}
                             </span>
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <button @click="openModal(appointment.client_id)"
-                                    class="text-indigo-600 hover:text-indigo-900">Карточка
-                            </button>
-                            <span class="ms-4">
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <button @click="openModal(appointment.client_id)"
+                                        class="text-indigo-600 hover:text-indigo-900">Карточка
+                                </button>
+                                <span class="ms-4">
                                 <button title="Редактировать" type="button" @click="editAppointment(appointment)" class="px-1">
                                     <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
                                 </button>
@@ -347,56 +480,65 @@ const deleteAppointment = async (appointmentId) => {
                                     <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
                                 </button>
                             </span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                <Pagination :items="leadAppointments" page-param="page_appointments"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <Pagination :items="leadAppointments" page-param="page_appointments" @change-page="changePageAppointments"/>
+                </div>
             </div>
             <div>
                 <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список лидов вашей организации</h3>
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Фамилия
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Отчество
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата
-                            рождения
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Телефон
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Действия
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="lead in leads.data" :key="lead.id">
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.surname }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.name }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.patronymic }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            {{ lead.birthdate ? dayjs(lead.birthdate).format('DD.MM.YYYY') : '' }}
-                        </td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.phone }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ lead.email }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                            <button @click="openModal(lead.id)" class="text-indigo-600 hover:text-indigo-900">Карточка
-                            </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                <Pagination :items="leads" page-param="page"/>
+                <Filters
+                    :fields="fields"
+                    :filterForm="filterForm"
+                    @update:filterForm="updateFilterForm"
+                    @resetFilters="resetFilters"
+                />
+                <div class="max-lg:overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Фамилия
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Отчество
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата
+                                рождения
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Телефон
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Действия
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="lead in leads.data" :key="lead.id">
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.surname }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.name }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.patronymic }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ lead.birthdate ? dayjs(lead.birthdate).format('DD.MM.YYYY') : '' }}
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.phone }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.email }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                <button @click="openModal(lead.id)" class="text-indigo-600 hover:text-indigo-900">Карточка
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <Pagination :items="leads" page-param="page" @change-page="changePage"/>
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>

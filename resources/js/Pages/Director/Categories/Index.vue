@@ -340,7 +340,7 @@ const fillCostForm = (cost) => {
         <div class="max-w-3xl mx-auto bg-white shadow-sm rounded-lg divide-y">
             <div v-for="type in types" :key="type.name" class="px-4 py-2">
                 <h2 class="text-lg font-medium text-gray-900">{{ type.title }}</h2>
-                <ul class="mt-1 text-sm text-gray-500">
+                <ul class="mt-1 text-sm max-sm:text-xs text-gray-500">
                     <li v-for="category in categories.filter(c => c.type === type.name)" :key="category.id"
                         class="flex justify-between items-center">
                         {{ category.name }}
