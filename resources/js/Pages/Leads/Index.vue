@@ -513,6 +513,9 @@ const resetForm = (form) => {
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Телефон
                             </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Источник
+                            </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -529,6 +532,7 @@ const resetForm = (form) => {
                                 {{ lead.birthdate ? dayjs(lead.birthdate).format('DD.MM.YYYY') : '' }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.phone }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ lead.ad_source }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.email }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <button @click="openModal(lead.id)" class="text-indigo-600 hover:text-indigo-900">Карточка

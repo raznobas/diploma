@@ -155,6 +155,40 @@ const fetchTasks = async (clientId) => {
         showToast("Ошибка получения задач клиента: " + error.message, "error");
     }
 };
+
+// Копирование данных о клиенте в буфер обмена
+const copyClientInfo = () => {
+    const client = props.client;
+    const fields = [
+        { label: 'ID', value: client.id },
+        { label: 'Фамилия', value: client.surname },
+        { label: 'Имя', value: client.name },
+        { label: 'Отчество', value: client.patronymic },
+        { label: 'Дата рождения', value: client.birthdate ? dayjs(client.birthdate).format('DD.MM.YYYY') : '' },
+        { label: 'Место работы', value: client.workplace },
+        { label: 'Телефон', value: client.phone },
+        { label: 'Почта', value: client.email },
+        { label: 'Телеграм', value: client.telegram },
+        { label: 'Инстаграм', value: client.instagram },
+        { label: 'Адрес', value: client.address },
+        { label: 'Пол', value: client.gender === 'male' ? 'M' : client.gender === 'female' ? 'Ж' : '' },
+        { label: 'Источник', value: client.ad_source },
+    ];
+
+    const clientInfo = fields
+        .filter(field => field.value) // Убираем пустые значения
+        .map(field => `${field.label}: ${field.value}`) // Формируем строку для каждого непустого поля
+        .join('\n'); // Объединяем в текст через перенос строки
+
+    navigator.clipboard.writeText(clientInfo)
+        .then(() => {
+            alert('Информация о клиенте скопирована в буфер обмена!');
+        })
+        .catch(() => {
+            alert('Не удалось скопировать информацию о клиенте.');
+        });
+};
+
 </script>
 
 <template>
@@ -165,6 +199,11 @@ const fetchTasks = async (clientId) => {
                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                         <span v-if="client.is_lead === 1">Информация о лид</span>
                         <span v-else>Информация о клиенте</span>
+                        <span class="ml-3">
+                            <button title="Копировать данные клиента" type="button" @click="copyClientInfo" class="mt-1">
+                                <i class="fa fa-files-o text-xl text-blue-600" aria-hidden="true"></i>
+                            </button>
+                        </span>
                         <span class="ml-3">
                             <button title="Редактировать" type="button" @click="editClient" class="mt-1">
                                 <i class="fa fa-pencil text-xl text-blue-600" aria-hidden="true"></i>

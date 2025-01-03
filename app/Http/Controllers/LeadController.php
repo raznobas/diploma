@@ -185,11 +185,20 @@ class LeadController extends Controller
             return response()->json(['error' => 'Зал не найден'], 404);
         }
 
+        $directorId = $gym->director_id ?? 3; // Если директора зала не нашли, тогда записываем к "общему" директору
+
+        $adSource = null;
+        if ($gym->director_id === null) {
+            $adSource = 'extrimpower.ru ' . $gym->label; // Если director_id null, записываем label зала в ad_source
+        }
+
+        // Создаем лид
         $lead = Client::create([
             'name' => $clientName,
             'phone' => $clientPhone,
             'is_lead' => true,
-            'director_id' => $gym->director_id,
+            'director_id' => $directorId,
+            'ad_source' => $adSource,
         ]);
 
         // Возвращаем успешный ответ

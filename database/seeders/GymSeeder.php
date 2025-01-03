@@ -11,7 +11,6 @@ class GymSeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    // TODO: поменять director_id на проде после выкатки
     public function run(): void
     {
         // Массив залов с русскими и английскими названиями
