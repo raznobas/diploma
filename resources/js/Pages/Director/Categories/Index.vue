@@ -200,7 +200,7 @@ const fillCostForm = (cost) => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Modal :max-width="'lg'" :show="editModal" @close="cancelEdit">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <form @submit.prevent="submitEditOption" class="mt-3 text-center sm:mt-0 sm:text-left">
+                        <form @submit.prevent="submitEditOption" class="mt-3 sm:mt-0 sm:text-left">
                             <h3 class="text-lg mb-3 leading-6 font-medium text-gray-900" id="modal-title">
                                 <span>Редактирование категории</span>
                             </h3>

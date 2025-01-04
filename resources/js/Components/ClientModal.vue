@@ -195,26 +195,22 @@ const copyClientInfo = () => {
     <Modal :show="show" @close="closeModal">
         <div v-if="client" class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div>
-                <div class="mt-3 text-center sm:mt-0 sm:text-left">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                <div class="mt-3 sm:mt-0 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mr-2 md:inline" id="modal-title">
                         <span v-if="client.is_lead === 1">Информация о лид</span>
                         <span v-else>Информация о клиенте</span>
-                        <span class="ml-3">
-                            <button title="Копировать данные клиента" type="button" @click="copyClientInfo" class="mt-1">
-                                <i class="fa fa-files-o text-xl text-blue-600" aria-hidden="true"></i>
-                            </button>
-                        </span>
-                        <span class="ml-3">
-                            <button title="Редактировать" type="button" @click="editClient" class="mt-1">
-                                <i class="fa fa-pencil text-xl text-blue-600" aria-hidden="true"></i>
-                            </button>
-                        </span>
-                        <span v-if="$page.props.auth.role !== 'manager'" class="ml-3">
-                            <button title="Удалить" type="button" @click="deleteClient" class="mt-1">
-                                <i class="fa fa-trash text-xl text-red-700" aria-hidden="true"></i>
-                            </button>
-                        </span>
                     </h3>
+                    <div class="md:inline">
+                        <button title="Копировать данные клиента" type="button" @click="copyClientInfo" class="px-2 max-sm:py-1">
+                            <i class="fa fa-files-o text-xl text-blue-600" aria-hidden="true"></i>
+                        </button>
+                        <button title="Редактировать" type="button" @click="editClient" class="px-2 max-sm:py-1">
+                            <i class="fa fa-pencil text-xl text-blue-600" aria-hidden="true"></i>
+                        </button>
+                        <button v-if="$page.props.auth.role !== 'manager'" title="Удалить" type="button" @click="deleteClient" class="px-2 max-sm:py-1">
+                            <i class="fa fa-trash text-xl text-red-700" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <div class="mt-2">
                         <div class="flex gap-2 justify-between" v-if="!isEditing">
                             <p class="text-sm text-gray-500">
@@ -248,7 +244,7 @@ const copyClientInfo = () => {
                             </p>
                         </div>
                         <form v-else @submit.prevent="submitEdit">
-                            <div class="flex flex-row flex-wrap gap-1 items-end">
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-1 items-end">
                                 <div class="flex flex-col">
                                     <label for="surname" class="text-sm font-medium text-gray-700">Фамилия</label>
                                     <input type="text" v-model="formEdit.surname"
@@ -269,7 +265,7 @@ const copyClientInfo = () => {
                                     <InputError :message="formEdit.errors.patronymic"
                                                 class="mt-2 text-sm text-red-600"/>
                                 </div>
-                                <div class="flex flex-col col-span-1 w-32">
+                                <div class="flex flex-col">
                                     <label for="birthdate" class="text-sm font-medium text-gray-700">Дата
                                         рождения</label>
                                     <input type="date" v-model="formEdit.birthdate"
@@ -313,7 +309,7 @@ const copyClientInfo = () => {
                                            class="p-1 border border-gray-300 rounded-md"/>
                                     <InputError :message="formEdit.errors.address" class="mt-2 text-sm text-red-600"/>
                                 </div>
-                                <div class="flex flex-col w-14">
+                                <div class="flex flex-col">
                                     <label for="gender" class="text-sm font-medium text-gray-700">Пол</label>
                                     <select v-model="formEdit.gender" class="p-1 border border-gray-300 rounded-md">
                                         <option value="male">М</option>
