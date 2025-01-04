@@ -195,7 +195,7 @@ const copyClientInfo = () => {
     <Modal :show="show" @close="closeModal">
         <div v-if="client" class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div>
-                <div class="mt-3 sm:mt-0 sm:text-left">
+                <div class="sm:mt-0 sm:text-left">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mr-2 md:inline" id="modal-title">
                         <span v-if="client.is_lead === 1">Информация о лид</span>
                         <span v-else>Информация о клиенте</span>

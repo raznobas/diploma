@@ -191,17 +191,17 @@ const closeModal = () => {
 
 <template>
     <Modal :show="show" @close="closeModal">
-        <div v-if="sale" class="bg-white px-4 pb-4 sm:p-6 sm:pb-4">
+        <div v-if="sale" class="bg-white px-4 pb-4 p-6">
             <form @submit.prevent="submitForm">
-                <div class="flex flex-row flex-wrap gap-2 auto-cols-max items-end mt-2">
-                    <div class="flex flex-col col-span-1 w-32">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2 auto-cols-max items-end mt-2">
+                    <div class="flex flex-col col-span-1">
                         <label for="edit_sale_date" class="text-sm font-medium text-gray-700">Дата продажи</label>
                         <input id="edit_sale_date" type="date" v-model="form.sale_date"
                                class="mt-1 p-1 border border-gray-300 rounded-md"
                         />
                         <InputError :message="form.errors.sale_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-56 relative">
+                    <div class="flex flex-col col-span-2 relative">
                         <label for="edit_fio" class="text-sm font-medium text-gray-700">Имя</label>
                         <vue-multiselect
                             id="edit_fio"
@@ -267,7 +267,7 @@ const closeModal = () => {
                         </select>
                         <InputError :message="form.errors.product_type" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32">
+                    <div class="flex flex-col">
                         <label for="edit_subscription_duration"
                                class="text-sm font-medium text-gray-700">Длительность абонемента</label>
                         <select id="edit_subscription_duration" v-model="form.subscription_duration"
@@ -281,7 +281,7 @@ const closeModal = () => {
                         </select>
                         <InputError :message="form.errors.subscription_duration" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32">
+                    <div class="flex flex-col">
                         <label for="edit_visits_per_week" class="text-sm font-medium text-gray-700">Посещений в
                             неделю</label>
                         <select id="edit_visits_per_week" v-model="form.visits_per_week"
@@ -313,7 +313,7 @@ const closeModal = () => {
                         </select>
                         <InputError :message="form.errors.trainer_category" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="edit_trainer" class="text-sm font-medium text-gray-700">Тренер</label>
                         <select id="edit_trainer" v-model="form.trainer"
                                 class="mt-1 p-1 pe-8 border border-gray-300 rounded-md">
@@ -323,7 +323,7 @@ const closeModal = () => {
                         </select>
                         <InputError :message="form.errors.trainer_category" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                     >
                         <label for="edit_subscription_start_date" class="text-sm font-medium text-gray-700">Начало
                             абонемента</label>
@@ -333,7 +333,7 @@ const closeModal = () => {
                         />
                         <InputError :message="form.errors.subscription_start_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                     >
                         <label for="edit_subscription_end_date" class="text-sm font-medium text-gray-700">Окончание
                             абонемента</label>
@@ -341,19 +341,19 @@ const closeModal = () => {
                                class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.subscription_end_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-24">
+                    <div class="flex flex-col">
                         <label for="edit_cost" class="text-sm font-medium text-gray-700">Стоимость</label>
                         <input id="edit_cost" type="number" min="0" step="1" v-model="form.cost"
                                class="mt-1 p-1 border border-gray-300 rounded-md" required/>
                         <InputError :message="form.errors.cost" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-24">
+                    <div class="flex flex-col">
                         <label for="edit_paid_amount" class="text-sm font-medium text-gray-700">Сумма оплач.</label>
                         <input id="edit_paid_amount" type="number" min="0" step="1" v-model="form.paid_amount"
                                class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.paid_amount" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32">
+                    <div class="flex flex-col">
                         <label for="edit_pay_method" class="text-sm font-medium text-gray-700">Способ оплаты</label>
                         <select id="edit_pay_method" v-model="form.pay_method"
                                 class="mt-1 p-1 pe-8 border border-gray-300 rounded-md"
