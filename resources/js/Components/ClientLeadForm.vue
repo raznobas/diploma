@@ -43,15 +43,15 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="bg-white px-4 pb-4 sm:p-6 sm:pb-4">
+    <div class="bg-white px-4 pb-4 p-6">
         <form @submit.prevent="submitForm">
-            <div class="flex flex-row flex-wrap gap-1 items-end">
-                <div class="flex flex-col">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 items-end mt-3">
+                <div class="flex flex-col max-sm:col-span-2">
                     <label for="surname" class="text-sm font-medium text-gray-700">Фамилия</label>
                     <input type="text" v-model="form.surname" class="p-1 border border-gray-300 rounded-md"/>
                     <InputError :message="form.errors.surname" class="mt-2 text-sm text-red-600"/>
                 </div>
-                <div class="flex flex-col">
+                <div class="flex flex-col max-sm:col-span-2">
                     <label for="name" class="text-sm font-medium text-gray-700">Имя<span class="text-red-600">*</span></label>
                     <input type="text" required v-model="form.name" class="p-1 border border-gray-300 rounded-md"/>
                     <InputError :message="form.errors.name" class="mt-2 text-sm text-red-600"/>
@@ -61,7 +61,7 @@ onMounted(() => {
                     <input type="text" v-model="form.patronymic" class="p-1 border border-gray-300 rounded-md"/>
                     <InputError :message="form.errors.patronymic" class="mt-2 text-sm text-red-600"/>
                 </div>
-                <div class="flex flex-col col-span-1 w-32">
+                <div class="flex flex-col">
                     <label for="birthdate" class="text-sm font-medium text-gray-700">Дата рождения</label>
                     <input type="date" v-model="form.birthdate" class="p-1 border border-gray-300 rounded-md"/>
                     <InputError :message="form.errors.birthdate" class="mt-2 text-sm text-red-600"/>
@@ -96,7 +96,7 @@ onMounted(() => {
                     <input type="text" v-model="form.address" class="p-1 border border-gray-300 rounded-md"/>
                     <InputError :message="form.errors.address" class="mt-2 text-sm text-red-600"/>
                 </div>
-                <div class="flex flex-col w-14">
+                <div class="flex flex-col">
                     <label for="gender" class="text-sm font-medium text-gray-700">Пол</label>
                     <select v-model="form.gender" class="p-1 border border-gray-300 rounded-md">
                         <option value="male">М</option>

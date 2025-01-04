@@ -135,58 +135,58 @@ const changePage = (page) => {
     <AuthenticatedLayout>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <form @submit.prevent="submit">
-                <div class="flex flex-row flex-wrap gap-2 items-end">
-                    <div class="flex flex-col">
+                <div class="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 items-end">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="surname" class="text-sm font-medium text-gray-700">Фамилия</label>
                         <input id="surname" type="text" v-model="form.surname" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.surname" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="name" class="text-sm font-medium text-gray-700">Имя<span class="text-red-600">*</span></label>
                         <input id="name" type="text" required v-model="form.name" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.name" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="patronymic" class="text-sm font-medium text-gray-700">Отчество</label>
                         <input id="patronymic" type="text" v-model="form.patronymic" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.patronymic" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col col-span-1 w-32">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="birthdate" class="text-sm font-medium text-gray-700">Дата рождения</label>
                         <input id="birthdate" type="date" v-model="form.birthdate" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.birthdate" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="workplace" class="text-sm font-medium text-gray-700">Место работы</label>
                         <input id="workplace" type="text" v-model="form.workplace" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.workplace" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
                         <input id="phone" type="text" v-model="form.phone" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.phone" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="email" class="text-sm font-medium text-gray-700">Почта</label>
                         <input id="email" type="text" v-model="form.email" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.email" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="telegram" class="text-sm font-medium text-gray-700">Телеграм</label>
                         <input id="telegram" type="text" v-model="form.telegram" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.telegram" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="instagram" class="text-sm font-medium text-gray-700">Инстаграм</label>
                         <input id="instagram" type="text" v-model="form.instagram" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.instagram" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-2">
                         <label for="address" class="text-sm font-medium text-gray-700">Адрес</label>
                         <input id="address" type="text" v-model="form.address" class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.address" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-14">
+                    <div class="flex flex-col">
                         <label for="gender" class="text-sm font-medium text-gray-700">Пол</label>
                         <select id="gender" v-model="form.gender" class="mt-1 p-1 border border-gray-300 rounded-md">
                             <option value="male">М</option>
@@ -194,7 +194,7 @@ const changePage = (page) => {
                         </select>
                         <InputError :message="form.errors.gender" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col">
+                    <div class="flex flex-col max-sm:col-span-3">
                         <label for="ad_source" class="text-sm font-medium text-gray-700">Источник</label>
                         <select id="ad_source" v-model="form.ad_source" class="mt-1 p-1 pe-8 border border-gray-300 rounded-md">
                             <option v-for="source in source_options.filter(c => c.type === 'ad_source')"

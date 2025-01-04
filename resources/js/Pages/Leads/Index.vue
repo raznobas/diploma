@@ -34,7 +34,6 @@ const form = useForm({
     trainer: null,
     training_date: null,
     training_time: null,
-    hasAppointment: false,
 });
 
 const submit = () => {
@@ -139,7 +138,6 @@ const editAppointment = (appointment) => {
     form.trainer = appointment.trainer;
     form.training_date = appointment.training_date;
     form.training_time = appointment.training_time;
-    form.hasAppointment = true;
 };
 const submitEdit = () => {
     form.client_id = form.client_object.id;
@@ -309,19 +307,18 @@ const resetForm = (form) => {
             </Modal>
             <form @submit.prevent="submit" class="mt-6">
                 <h3 v-if="form.id" class="mt-8 mb-4 text-lg font-medium text-gray-900">Редактирование записи лида</h3>
-                <div class="flex flex-row flex-wrap gap-2 items-end mt-2">
-                    <div class="flex flex-col col-span-1 w-32">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 items-end mt-2">
+                    <div class="flex flex-col">
                         <label for="sale_date" class="text-sm font-medium text-gray-700">Дата продажи</label>
                         <input id="sale_date" type="date" v-model="form.sale_date"
-                               class="mt-1 p-1 border border-gray-300 rounded-md"
-                        />
+                               class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.sale_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-56 relative">
+                    <div class="flex flex-col col-span-2 relative">
                         <label for="fio" class="text-sm font-medium text-gray-700">Имя
                             <span v-if="form.client_object">
                                 <button type="button" @click="openModal(form.client_object)"
-                                        class="text-indigo-600 hover:text-indigo-900">(карточка)</button>
+                                    class="text-indigo-600 hover:text-indigo-900">(карточка)</button>
                             </span>
                         </label>
                         <vue-multiselect id="fio"
@@ -342,12 +339,12 @@ const resetForm = (form) => {
                             </template>
                         </vue-multiselect>
                     </div>
-                    <div v-if="form.client_object" class="flex flex-col w-32 cursor-not-allowed">
+                    <div v-if="form.client_object" class="flex flex-col cursor-not-allowed">
                         <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
                         <input disabled :placeholder="form.client_object?.phone ?? 'Отсутствует'"
                                type="text" class="p-1 border border-gray-300 rounded-md"/>
                     </div>
-                    <div v-if="form.client_object" class="flex flex-col w-32 cursor-not-allowed">
+                    <div v-if="form.client_object" class="flex flex-col cursor-not-allowed">
                         <label for="phone" class="text-sm font-medium text-gray-700">Источник</label>
                         <input disabled :placeholder="form.client_object?.ad_source ?? 'Отсутствует'"
                                type="text" class="p-1 border border-gray-300 rounded-md"/>
@@ -386,29 +383,23 @@ const resetForm = (form) => {
                         <InputError :message="form.errors.trainer" class="mt-2 text-sm text-red-600"/>
                     </div>
                     <div class="flex flex-col">
-                        <label class="text-sm font-medium text-gray-700">Запись</label>
-                        <input type="checkbox" v-model="form.hasAppointment"
-                               class="mt-1 p-3 border border-gray-300 rounded-md"/>
-                    </div>
-                    <div class="flex flex-col w-32" :class="{ 'disabled-field': !form.hasAppointment }">
                         <label for="training_date" class="text-sm font-medium text-gray-700">Дата записи</label>
                         <input id="training_date" type="date" v-model="form.training_date"
                                class="mt-1 p-1 border border-gray-300 rounded-md" required
                         />
                         <InputError class="mt-2" :message="form.errors.training_date"/>
                     </div>
-                    <div class="flex flex-col w-32" :class="{ 'disabled-field': !form.hasAppointment }">
+                    <div class="flex flex-col">
                         <label for="training_time" class="text-sm font-medium text-gray-700">Время записи</label>
                         <input id="training_time" type="time" v-model="form.training_time"
                                class="mt-1 p-1 border border-gray-300 rounded-md"
-                               :disabled="!form.hasAppointment"
                         />
                     </div>
                 </div>
                 <div class="mt-4">
                     <PrimaryButton v-if="!form.id" :disabled="form.processing">Добавить запись</PrimaryButton>
                     <PrimaryButton v-else type="button" :disabled="form.processing" @click="submitEdit()">
-                       Редактировать запись
+                        Редактировать запись
                     </PrimaryButton>
                     <SecondaryButton class="ml-2" type="button" @click="() => { form.reset(); }">
                         {{ form.id ? 'Отмена' : 'Очистить' }}

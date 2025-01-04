@@ -399,15 +399,15 @@ const changePage = (page) => {
                 <ClientLeadForm :is-lead="false" @submit="createClient"/>
             </Modal>
             <form @submit.prevent="submit">
-                <div class="flex flex-row flex-wrap gap-2 auto-cols-max items-end mt-2">
-                    <div class="flex flex-col col-span-1 w-32">
+                <div class="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2 items-end mt-2">
+                    <div class="flex flex-col col-span-1">
                         <label for="sale_date" class="text-sm font-medium text-gray-700">Дата продажи</label>
                         <input id="sale_date" type="date" v-model="form.sale_date"
                                class="mt-1 p-1 border border-gray-300 rounded-md"
                         />
                         <InputError :message="form.errors.sale_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-56 relative">
+                    <div class="flex flex-col col-span-2 relative">
                         <label for="fio" class="text-sm font-medium text-gray-700">Имя
                             <span v-if="form.client_object">
                                 <button type="button" @click="openModal(form.client_object)"
@@ -433,7 +433,7 @@ const changePage = (page) => {
                             </template>
                         </vue-multiselect>
                     </div>
-                    <div v-if="form.client_object" class="flex flex-col w-32 cursor-not-allowed">
+                    <div v-if="form.client_object" class="flex flex-col cursor-not-allowed">
                         <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
                         <input disabled :placeholder="form.client_object?.phone ?? 'Отсутствует'"
                                type="text" class="p-1 border border-gray-300 rounded-md"/>
@@ -481,7 +481,7 @@ const changePage = (page) => {
                         </select>
                         <InputError :message="form.errors.product_type" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                          :class="{ 'disabled-field': !isServiceActive || !isSubscriptionActive }">
                         <label for="subscription_duration"
                                class="text-sm font-medium text-gray-700">Длительность абонемента</label>
@@ -496,7 +496,7 @@ const changePage = (page) => {
                         </select>
                         <InputError :message="form.errors.subscription_duration" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                          :class="{ 'disabled-field': !isServiceActive }">
                         <label for="visits_per_week" class="text-sm font-medium text-gray-700">Посещений в
                             неделю</label>
@@ -541,7 +541,7 @@ const changePage = (page) => {
                         </select>
                         <InputError :message="form.errors.trainer_category" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                          :class="{ 'disabled-field': !isServiceActive }">
                         <label for="subscription_start_date" class="text-sm font-medium text-gray-700">Начало
                             абонемента</label>
@@ -557,7 +557,7 @@ const changePage = (page) => {
                         />
                         <InputError :message="form.errors.subscription_start_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32"
+                    <div class="flex flex-col"
                          :class="{ 'disabled-field': !isServiceActive }">
                         <label for="subscription_end_date" class="text-sm font-medium text-gray-700">Окончание
                             абонемента</label>
@@ -565,13 +565,13 @@ const changePage = (page) => {
                                class="mt-1 p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.subscription_end_date" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-24">
+                    <div class="flex flex-col">
                         <label for="cost" class="text-sm font-medium text-gray-700">Стоимость</label>
                         <input id="cost" type="number" min="0" step="1" v-model="form.cost"
                                class="mt-1 p-1 border border-gray-300 rounded-md" required/>
                         <InputError :message="form.errors.cost" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-24">
+                    <div class="flex flex-col">
                         <label for="paid_amount" class="text-sm font-medium text-gray-700">Сумма оплач.</label>
                         <div class="-mt-1">
                             <input id="allSumPaid" class="w-3 h-3 p-0" type="checkbox" v-model="allSumPaid"/>
@@ -581,7 +581,7 @@ const changePage = (page) => {
                                class="p-1 border border-gray-300 rounded-md"/>
                         <InputError :message="form.errors.paid_amount" class="mt-2 text-sm text-red-600"/>
                     </div>
-                    <div class="flex flex-col w-32">
+                    <div class="flex flex-col">
                         <label for="pay_method" class="text-sm font-medium text-gray-700">Способ оплаты</label>
                         <select id="pay_method" v-model="form.pay_method"
                                 class="mt-1 p-1 pe-8 border border-gray-300 rounded-md"
