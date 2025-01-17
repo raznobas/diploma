@@ -110,6 +110,8 @@ const hasAbility = (ability) => {
 
                                     <template #content>
                                         <DropdownLink :href="route('profile.edit')"> Профиль</DropdownLink>
+                                        <DropdownLink :href="route('analytics.index')"> Аналитика</DropdownLink>
+                                        <DropdownLink :href="route('export.index')"> Экспорт</DropdownLink>
                                         <DropdownLink :href="route('logout')" method="post" as="button">
                                             Выйти
                                         </DropdownLink>
@@ -190,6 +192,8 @@ const hasAbility = (ability) => {
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.edit')"> Профиль</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('analytics.index')"> Аналитика</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('export.index')"> Экспорт</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">
                                 Выйти
                             </ResponsiveNavLink>

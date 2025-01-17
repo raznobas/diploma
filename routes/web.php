@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\CallController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CategoryCostController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SaleController;
@@ -52,10 +55,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/trials', [ClientController::class, 'trials'])->name('clients.trials');
         Route::get('/old', [ClientController::class, 'old'])->name('clients.old');
         Route::get('/source-options', [ClientController::class, 'getSourceOptions'])->name('clients.getSourceOptions');
+
+        Route::post('/store/{callId?}', [ClientController::class, 'store'])->name('clients.store');
+
         Route::resource('/', ClientController::class)
-            ->only(['index', 'store', 'update', 'destroy', 'show'])
+            ->only(['index', 'update', 'destroy', 'show'])
             ->names([
-                'index' => 'clients.index', 'store' => 'clients.store', 'update' => 'clients.update',
+                'index' => 'clients.index', 'update' => 'clients.update',
                 'destroy' => 'clients.destroy', 'show' => 'clients.show',
             ])
             ->parameters(['' => 'client']);
@@ -65,6 +71,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/renewals', [TaskController::class, 'renewals'])->name('tasks.renewals');
         Route::get('/trials-month', [TaskController::class, 'trialsLessThanMonth'])->name('tasks.trialsLessThanMonth');
     });
+
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/export', [ExportController::class, 'index'])->name('export.index');
+    Route::post('/export', [ExportController::class, 'export'])->name('export');
+
+    Route::patch('/leads/{lead}/toggle-check', [LeadController::class, 'toggleCheck']);
 });
 
 Route::resource('leads', LeadController::class)
@@ -74,6 +86,10 @@ Route::resource('leads', LeadController::class)
 Route::resource('tasks', TaskController::class)
     ->only(['index', 'store', 'update', 'destroy', 'show'])
     ->middleware(['auth', 'verified', 'can:manage-tasks']);
+
+Route::resource('calls', CallController::class)
+    ->only(['index', 'store', 'update', 'destroy', 'show'])
+    ->middleware(['auth', 'verified', 'can:manage-leads']);
 
 
 require __DIR__ . '/auth.php';

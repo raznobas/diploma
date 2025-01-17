@@ -41,6 +41,7 @@ class LeadController extends Controller
         // Основной запрос для лидов
         $leadsQuery = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', true)
+            ->orderByRaw('is_checked ASC') // is_checked = false будут выше, true — ниже
             ->orderBy('created_at', 'desc');
 
         // Применяем фильтры через FilterController
@@ -206,5 +207,15 @@ class LeadController extends Controller
             'message' => 'Лид успешно создан',
             'id' => $lead->id,
         ], 201);
+    }
+
+    public function toggleCheck(Client $lead)
+    {
+        $lead->is_checked = !$lead->is_checked;
+        $lead->save();
+
+        return response()->json([
+            'is_checked' => $lead->is_checked,
+        ]);
     }
 }

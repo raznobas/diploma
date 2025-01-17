@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Call;
 use App\Models\Category;
 use App\Models\Client;
 use App\Models\ClientStatus;
@@ -57,7 +58,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $callId = null)
     {
         $this->authorize('manage-sales');
         $validated = $request->validate([
@@ -88,6 +89,14 @@ class ClientController extends Controller
             'status_to' => $status,
             'director_id' => $client->director_id,
         ]);
+
+        // Если передан callId, обновляем запись звонка
+        if ($callId) {
+            $call = Call::find($callId);
+            if ($call) {
+                $call->update(['client_id' => $client->id]);
+            }
+        }
 
         return redirect()->back()->with(['person' => $client]);
     }

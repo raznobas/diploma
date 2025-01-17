@@ -294,6 +294,56 @@ const resetForm = (form) => {
         }
     });
 };
+
+// галочка проверки
+const toggleCheck = async (leadId) => {
+    try {
+        // Находим лид в списке
+        const lead = props.leads.data.find((lead) => lead.id === leadId);
+        if (!lead) return;
+
+        // Инвертируем значение is_checked
+        lead.is_checked = !lead.is_checked;
+
+        await axios.patch(`/leads/${leadId}/toggle-check`, {
+            is_checked: lead.is_checked,
+        });
+    } catch (error) {
+        console.error('Ошибка при обновлении состояния:', error);
+    }
+};
+
+// Копирование данных о клиенте в буфер обмена
+const copyClientInfo = (client) => {
+    const fields = [
+        { label: 'ID', value: client.id },
+        { label: 'Фамилия', value: client.surname },
+        { label: 'Имя', value: client.name },
+        { label: 'Отчество', value: client.patronymic },
+        { label: 'Дата рождения', value: client.birthdate ? dayjs(client.birthdate).format('DD.MM.YYYY') : '' },
+        { label: 'Место работы', value: client.workplace },
+        { label: 'Телефон', value: client.phone },
+        { label: 'Почта', value: client.email },
+        { label: 'Телеграм', value: client.telegram },
+        { label: 'Инстаграм', value: client.instagram },
+        { label: 'Адрес', value: client.address },
+        { label: 'Пол', value: client.gender === 'male' ? 'M' : client.gender === 'female' ? 'Ж' : '' },
+        { label: 'Источник', value: client.ad_source },
+    ];
+
+    const clientInfo = fields
+        .filter(field => field.value) // Убираем пустые значения
+        .map(field => `${field.label}: ${field.value}`) // Формируем строку для каждого непустого поля
+        .join('\n'); // Объединяем в текст через перенос строки
+
+    navigator.clipboard.writeText(clientInfo)
+        .then(() => {
+            alert('Информация о клиенте скопирована в буфер обмена!');
+        })
+        .catch(() => {
+            alert('Не удалось скопировать информацию о клиенте.');
+        });
+};
 </script>
 
 <template>
@@ -509,6 +559,7 @@ const resetForm = (form) => {
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта
                             </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Проверен</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Действия
                             </th>
@@ -526,7 +577,18 @@ const resetForm = (form) => {
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.ad_source }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.email }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
+                                <input
+                                    type="checkbox"
+                                    :checked="lead.is_checked"
+                                    @change="toggleCheck(lead.id)"
+                                    class="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
+                                />
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
                                 <button @click="openModal(lead.id)" class="text-indigo-600 hover:text-indigo-900">Карточка
+                                </button>
+                                <button title="Копировать данные лид" type="button" @click="copyClientInfo(lead)" class="ml-2 px-2">
+                                    <i class="fa fa-files-o text-md" aria-hidden="true"></i>
                                 </button>
                             </td>
                         </tr>
@@ -538,12 +600,3 @@ const resetForm = (form) => {
         </div>
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-.disabled-field {
-    opacity: 0.5;
-    pointer-events: none;
-    background-color: #f0f0f0;
-    border-color: #ccc;
-}
-</style>

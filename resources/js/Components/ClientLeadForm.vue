@@ -4,13 +4,25 @@ import {useForm, usePage} from "@inertiajs/vue3";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import {onMounted, ref} from "vue";
 
+const emit = defineEmits(['submit']);
+const props = defineProps({
+    isLead: {
+        type: Boolean,
+        required: true,
+    },
+    initialPhone: {
+        type: String,
+        default: null,
+    },
+});
+
 const form = useForm({
     surname: null,
     name: null,
     patronymic: null,
     birthdate: null,
     workplace: null,
-    phone: null,
+    phone: props.initialPhone || null,
     email: null,
     telegram: null,
     instagram: null,
@@ -21,13 +33,6 @@ const form = useForm({
     director_id: usePage().props.auth.director_id,
 });
 
-const emit = defineEmits(['submit']);
-const props = defineProps({
-    isLead: {
-        type: Boolean,
-        required: true,
-    },
-});
 const sourceOptions = ref(null);
 const getSourceOptions = async () => {
     const responseSourceOptions = await axios.get(route('clients.getSourceOptions'));
