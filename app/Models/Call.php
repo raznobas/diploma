@@ -10,7 +10,9 @@ class Call extends Model
     use HasFactory;
 
     protected $fillable = [
-        'phone',
+        'entry_id',
+        'phone_from',
+        'phone_to',
         'call_time',
         'duration',
         'status',

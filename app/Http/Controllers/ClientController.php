@@ -92,9 +92,20 @@ class ClientController extends Controller
 
         // Если передан callId, обновляем запись звонка
         if ($callId) {
+            // Находим запись звонка по callId
             $call = Call::find($callId);
+
             if ($call) {
-                $call->update(['client_id' => $client->id]);
+                // Получаем номер
+                $phoneFrom = $call->phone_from;
+
+                // Находим все записи звонков с таким же номером phone_from
+                $callsWithSamePhone = Call::where('phone_from', $phoneFrom)->get();
+
+                // Обновляем client_id для всех найденных записей
+                foreach ($callsWithSamePhone as $callToUpdate) {
+                    $callToUpdate->update(['client_id' => $client->id]);
+                }
             }
         }
 

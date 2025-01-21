@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Gym;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CallController extends Controller
@@ -15,7 +16,9 @@ class CallController extends Controller
         if (auth()->user()->director_id === null) {
             return false;
         }
-        $calls = Call::where('director_id', auth()->user()->director_id)->paginate(50);
+        $calls = Call::where('director_id', auth()->user()->director_id)
+            ->orderBy('call_time', 'desc')
+            ->paginate(50);
 
         return Inertia::render('Calls/Index', [
             'calls' => $calls,
@@ -33,51 +36,153 @@ class CallController extends Controller
 
     public function handleCallEvent(Request $request)
     {
-        $vpbxApiKey = $request->header('vpbx_api_key');
-        $sign = $request->header('sign');
+        // Логируем получение запроса
+        Log::info('Получен запрос на обработку звонка', [
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
+        ]);
 
-        if ($vpbxApiKey !== env('MANGO_VPBX_API_KEY') || $sign !== env('MANGO_SIGN')) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $jsonString = $request->input('json');
+
+        // Декодируем JSON-строку в массив
+        $json = json_decode($jsonString, true);
+
+        // Логируем данные звонка
+        Log::info('Данные звонка получены', [
+            'entry_id' => $json['entry_id'],
+            'json' => $json,
+        ]);
+
+        // Не записываем звонки от сотрудников клиентам
+        if (isset($json['from']['extension'])) {
+            return;
         }
 
-        // Получение JSON-данных
-        $json = $request->json()->all();
+        // Сохраняем только звонки с location = abonent
+        if ($json['location'] !== 'abonent') {
+            Log::info('Запись пропущена, так как location не равен abonent', [
+                'entry_id' => $json['entry_id'],
+                'location' => $json['location'],
+            ]);
+            return;
+        }
 
         // Обработка данных звонка
         $callData = $this->parseCallData($json);
 
-        // Создание записи в таблице calls
-        $call = Call::create($callData);
+        // Поиск существующей записи по entry_id
+        $call = Call::where('entry_id', $json['entry_id'])->first();
 
-        return response()->json(['status' => 'success', 'call_id' => $call->id], 200);
+        if ($call) {
+            if (!in_array($call->status, ['answered', 'missed'])) {
+                // Обновляем статус только если текущий статус не является завершенным
+                $call->update(['status' => $json['call_state']]);
+
+                Log::info('Запись звонка успешно обновлена', [
+                    'id' => $call->id,
+                    'new_status' => $json['call_state'],
+                ]);
+            }
+        } else {
+            // Если записи нет, создаем новую
+            $call = Call::create($callData);
+
+            // Логируем успешное создание записи
+            Log::info('Запись звонка успешно создана', ['call_id' => $call->id]);
+        }
+    }
+
+    public function handleCallSummary(Request $request)
+    {
+        // Логируем получение запроса
+        Log::info('Получен запрос на обработку завершения звонка', [
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
+        ]);
+
+        $jsonString = $request->input('json');
+
+        // Декодируем JSON-строку в массив
+        $json = json_decode($jsonString, true);
+
+        // Логируем данные завершения звонка
+        Log::info('Данные завершения звонка получены', [
+            'entry_id' => $json['entry_id'],
+            'json' => $json,
+        ]);
+
+        $status = ($json['entry_result'] == 1) ? 'answered' : 'missed';
+
+        $duration = $json['end_time'] - $json['create_time'];
+
+        // Поиск существующей записи по entry_id
+        $call = Call::where('entry_id', $json['entry_id'])->first();
+
+        if ($call) {
+            // Если запись существует, обновляем её поля
+            $call->update([
+                'duration' => $duration,
+                'status' => $status,
+            ]);
+
+            // Логируем успешное обновление записи
+            Log::info('Запись звонка успешно обновлена (завершение)', [
+                'id' => $call->id,
+            ]);
+        } else {
+            // Если записи нет, логируем ошибку
+            Log::warning('Запись звонка не найдена для обновления', [
+                'entry_id' => $json['entry_id'],
+            ]);
+        }
     }
 
     private function parseCallData(array $json): array
     {
-        $toPhone = $json['to']['number'];
+        $toPhone = isset($json['to']['extension'])
+            ? $json['to']['line_number'] // Используем line_number, если есть extension
+            : $json['to']['number']; // Иначе используем number
 
         // Поиск записи по телефону
         $gym = Gym::where('phone', $toPhone)
             ->orWhere('phone', $this->swapSevenAndEight($toPhone))
             ->first();
 
-        $directorId = $gym ? $gym->director_id : null;
+        $directorId = $gym ? $gym->director_id : 3; // ID тестового директора
+
+        // Логируем результат поиска зала
+        Log::info('Результат поиска зала', [
+            'gym' => $gym,
+            'director_id' => $directorId,
+        ]);
 
         $fromPhone = $json['from']['number'];
 
         // Поиск клиента или лида по номеру с 7 или 8
         $client = Client::where('director_id', $directorId)
-            ->where('phone', $fromPhone)
-            ->orWhere('phone', $this->swapSevenAndEight($fromPhone))
+            ->where(function ($query) use ($fromPhone) {
+                $query->where('phone', $fromPhone)
+                    ->orWhere('phone', $this->swapSevenAndEight($fromPhone));
+            })
             ->first();
 
-        return [
-            'phone' => $json['from']['number'],
+        // Логируем результат поиска клиента
+        Log::info('Результат поиска клиента', ['client' => $client]);
+
+        $callData = [
+            'entry_id' => $json['entry_id'],
+            'phone_from' => $json['from']['number'],
+            'phone_to' => $toPhone,
             'call_time' => Carbon::createFromTimestamp($json['timestamp']),
-            'status' => $json['call_state'] === 'Disconnected' ? 'missed' : 'processing',
+            'status' => $json['call_state'],
             'client_id' => $client ? $client->id : null,
             'director_id' => $directorId,
         ];
+
+        // Логируем возвращаемые данные
+        Log::info('Данные для создания записи звонка', ['callData' => $callData]);
+
+        return $callData;
     }
 
     function swapSevenAndEight($phone)

@@ -1,6 +1,6 @@
 <script setup>
 
-import {Head, useForm} from "@inertiajs/vue3";
+import {Head, router, useForm} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
@@ -10,6 +10,7 @@ import ClientModal from "@/Components/ClientModal.vue";
 import {useToast} from "@/useToast.js";
 import ClientLeadForm from "@/Components/ClientLeadForm.vue";
 import Modal from "@/Components/Modal.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
 const {showToast} = useToast();
 
 const props = defineProps(['calls']);
@@ -70,12 +71,34 @@ const getStatusText = (status) => {
             return 'Пропущен';
         case 'answered':
             return 'Принят';
-        case 'processing':
-            return 'На линии';
         default:
-            return 'Неизвестно';
+            return '-';
     }
 }
+
+const formatDuration = (duration) => {
+    if (!duration || duration === 0) {
+        return 0;
+    }
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    return `${minutes} м. ${seconds} с.`;
+};
+
+// Метод для форматирования времени с добавлением 3 часов (Москва, UTC+3)
+const formatMoscowTime = (datetime) => {
+    return dayjs(datetime).add(3, 'hour').format('DD.MM.YYYY HH:mm');
+};
+
+const refreshCalls = () => {
+    router.get(route('calls.index'), {}, {
+        preserveState: true,
+        preserveScroll: true,
+        onError: (errors) => {
+            showToast("Ошибка при обновлении данных", "error");
+        },
+    });
+};
 </script>
 
 <template>
@@ -89,16 +112,22 @@ const getStatusText = (status) => {
                 <Modal :show="showLeadModal" @close="closeModal">
                     <ClientLeadForm
                         :is-lead="true"
-                        :initial-phone="leadsCall.phone"
+                        :initial-phone="leadsCall.phone_from"
                         @submit="createLead"
                     />
                 </Modal>
+                <PrimaryButton
+                    @click="refreshCalls"
+                    class="mb-4"
+                >
+                    Обновить
+                </PrimaryButton>
                 <div class="max-lg:overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Дата
+                                Время
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Телефон
@@ -117,10 +146,10 @@ const getStatusText = (status) => {
                         <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="call in calls.data" :key="call.id">
                             <td class="px-3 py-2 whitespace-nowrap">
-                                {{ call.call_time ? dayjs(call.call_time).format('DD.MM.YYYY HH:mm') : '' }}
+                                {{ call.call_time ? formatMoscowTime(call.call_time) : '' }}
                             </td>
-                            <td class="px-3 py-2 whitespace-nowrap">{{ call.phone }}</td>
-                            <td class="px-3 py-2 whitespace-nowrap">{{ call.duration }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ call.phone_from }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ formatDuration(call.duration) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ getStatusText(call.status) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <button v-if="call.client_id" @click="openModal(call.client_id)" class="text-indigo-600 hover:text-indigo-900">

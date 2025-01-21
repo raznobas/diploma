@@ -13,3 +13,4 @@ Route::post('/lead/store', [LeadController::class, 'api_store'])
     ->middleware('auth:sanctum');
 
 Route::post('/events/call', [CallController::class, 'handleCallEvent']);
+Route::post('/events/summary', [CallController::class, 'handleCallSummary']);

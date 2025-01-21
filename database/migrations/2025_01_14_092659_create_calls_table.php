@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('calls', function (Blueprint $table) {
             $table->id();
-            $table->string('phone');
+            $table->string('entry_id');
+            $table->string('phone_from');
+            $table->string('phone_to');
             $table->dateTime('call_time');
             $table->integer('duration')->nullable();
-            $table->enum('status', ['answered', 'missed', 'processing'])->default('processing');
+            $table->enum('status', ['appeared', 'connected', 'onHold', 'disconnected', 'answered', 'missed'])->nullable();
             $table->unsignedBigInteger('client_id')->nullable();
             $table->unsignedBigInteger('director_id')->nullable();
             $table->timestamps();
