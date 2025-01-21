@@ -35,7 +35,7 @@ const hasAbility = (ability) => {
                             </div>
 
                             <!-- Navigation Links -->
-                            <div class="hidden space-x-8 sm:-my-px sm:ms-10 lg:flex">
+                            <div class="hidden space-x-6 sm:-my-px sm:ms-6 lg:flex">
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Панель
                                 </NavLink>
@@ -81,6 +81,9 @@ const hasAbility = (ability) => {
                                         </template>
                                     </Dropdown>
                                 </div>
+                                <NavLink :href="route('calls.index')" :active="route().current('calls.index')">
+                                    Звонки
+                                </NavLink>
                                 <NavLink v-if="hasAbility('manage-categories')" :href="route('categories.index')"
                                          :active="route().current('categories.index')">
                                     Настройка категорий
@@ -174,6 +177,9 @@ const hasAbility = (ability) => {
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('tasks.renewals')"
                                            :active="route().current('tasks.renewals')"> Продление
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('calls.index')"
+                                           :active="route().current('calls.index')"> Звонки
                         </ResponsiveNavLink>
                         <ResponsiveNavLink v-if="hasAbility('manage-categories')" :href="route('categories.index')"
                                            :active="route().current('categories.index')">
