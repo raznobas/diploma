@@ -13,6 +13,7 @@ import {Head} from "@inertiajs/vue3";
 import ClientModal from "@/Components/ClientModal.vue";
 import {ref} from "vue";
 import Pagination from "@/Components/Pagination.vue";
+import Tooltip from "@/Components/Tooltip.vue";
 
 const props = defineProps(['oldClients']);
 
@@ -75,12 +76,13 @@ const closeModal = () => {
                         <td class="px-3 py-2 whitespace-nowrap">{{ client.phone }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ client.email }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">
-                        <span class="cursor-help"
-                              :title="client.subscription_end_date ? dayjs(client.subscription_end_date).format('DD.MM.YYYY') : ''">
-                            {{
-                                client.subscription_end_date ? dayjs(client.subscription_end_date).locale('ru').fromNow() : ''
-                            }}
-                        </span>
+                            <Tooltip :content="client.subscription_end_date ? dayjs(client.subscription_end_date).format('DD.MM.YYYY') : ''">
+                                <template #trigger>
+                                    {{
+                                        client.subscription_end_date ? dayjs(client.subscription_end_date).locale('ru').fromNow() : ''
+                                    }}
+                                </template>
+                            </Tooltip>
                         </td>
                         <td class="px-3 py-2 whitespace-nowrap">
                             <button @click="openModal(client.id)" class="text-indigo-600 hover:text-indigo-900">Карточка

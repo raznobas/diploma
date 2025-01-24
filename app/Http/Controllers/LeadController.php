@@ -193,13 +193,32 @@ class LeadController extends Controller
             $adSource = 'extrimpower.ru ' . $gym->label; // Если director_id null, записываем label зала в ad_source
         }
 
-        // Создаем лид
-        $lead = Client::create([
-            'name' => $clientName,
-            'phone' => $clientPhone,
-            'is_lead' => true,
-            'director_id' => $directorId,
-            'ad_source' => $adSource,
+        // Проверяем, существует ли уже клиент с таким именем и номером телефона
+        $lead = Client::firstOrCreate(
+            [
+                'name' => $clientName,
+                'phone' => $clientPhone,
+            ],
+            [
+                'is_lead' => true,
+                'director_id' => $directorId,
+                'ad_source' => $adSource,
+            ]
+        );
+
+        // Если лид уже существовал, возвращаем сообщение об этом
+        if (!$lead->wasRecentlyCreated) {
+            return response()->json([
+                'message' => 'Лид уже существует',
+                'id' => $lead->id,
+            ], 200);
+        }
+
+        // Создаем запись в таблице статусов клиентов/лид
+        ClientStatus::create([
+            'client_id' => $lead->id,
+            'status_to' => 'form_lead_created', // статус подразумевает создание лид из формы обратной связи с сайта extrimpower.ru
+            'director_id' => $lead->director_id,
         ]);
 
         // Возвращаем успешный ответ

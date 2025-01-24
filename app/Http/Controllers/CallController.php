@@ -36,12 +36,6 @@ class CallController extends Controller
 
     public function handleCallEvent(Request $request)
     {
-        // Логируем получение запроса
-        Log::info('Получен запрос на обработку звонка', [
-            'headers' => $request->headers->all(),
-            'body' => $request->all(),
-        ]);
-
         $jsonString = $request->input('json');
 
         // Декодируем JSON-строку в массив
@@ -55,15 +49,6 @@ class CallController extends Controller
 
         // Не записываем звонки от сотрудников клиентам
         if (isset($json['from']['extension'])) {
-            return;
-        }
-
-        // Сохраняем только звонки с location = abonent
-        if ($json['location'] !== 'abonent') {
-            Log::info('Запись пропущена, так как location не равен abonent', [
-                'entry_id' => $json['entry_id'],
-                'location' => $json['location'],
-            ]);
             return;
         }
 
@@ -82,6 +67,12 @@ class CallController extends Controller
                     'id' => $call->id,
                     'new_status' => $json['call_state'],
                 ]);
+            } else {
+                Log::info('Статус звонка не обновлен, так как он уже завершен', [
+                    'id' => $call->id,
+                    'current_status' => $call->status,
+                    'new_status (not_updated)' => $json['call_state'],
+                ]);
             }
         } else {
             // Если записи нет, создаем новую
@@ -94,12 +85,6 @@ class CallController extends Controller
 
     public function handleCallSummary(Request $request)
     {
-        // Логируем получение запроса
-        Log::info('Получен запрос на обработку завершения звонка', [
-            'headers' => $request->headers->all(),
-            'body' => $request->all(),
-        ]);
-
         $jsonString = $request->input('json');
 
         // Декодируем JSON-строку в массив

@@ -234,7 +234,7 @@ const copyClientInfo = () => {
                             </p>
                             <p class="text-sm text-gray-500">
                                 <strong>Дата первого обращения в клуб:</strong>
-                                {{ client.created_at ? dayjs(client.created_at).format('DD.MM.YYYY') : '' }}<br>
+                                {{ client.created_at ? dayjs(client.created_at).format('DD.MM.YYYY HH:mm') : '' }}<br>
                                 <span v-if="client.is_lead === 0">
                                     <strong>Дата первого посещения:</strong> {{ firstSaleDate }}<br>
                                     <strong>Дата перехода из лида в клиента:</strong> {{

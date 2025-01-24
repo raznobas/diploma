@@ -541,6 +541,9 @@ const copyClientInfo = (client) => {
                         <thead class="bg-gray-50">
                         <tr>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Создан
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Фамилия
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
@@ -567,6 +570,9 @@ const copyClientInfo = (client) => {
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="lead in leads.data" :key="lead.id">
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ lead.created_at ? dayjs(lead.created_at).format('DD.MM.YY HH:mm') : '' }}<br>
+                            </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.surname }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.name }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ lead.patronymic }}</td>

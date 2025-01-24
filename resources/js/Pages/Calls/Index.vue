@@ -11,6 +11,7 @@ import {useToast} from "@/useToast.js";
 import ClientLeadForm from "@/Components/ClientLeadForm.vue";
 import Modal from "@/Components/Modal.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
+import Spinner from "@/Components/Spinner.vue";
 const {showToast} = useToast();
 
 const props = defineProps(['calls']);
@@ -19,6 +20,7 @@ const showModal = ref(false);
 const selectedClientCard = ref(null);
 const showLeadModal = ref(false);
 const leadsCall = ref(null);
+const isLoading = ref(false);
 
 const openModal = async (clientId) => {
     try {
@@ -71,6 +73,11 @@ const getStatusText = (status) => {
             return 'Пропущен';
         case 'answered':
             return 'Принят';
+        case 'appeared':
+        case 'connected':
+            return 'Новый';
+        case 'disconnected':
+            return 'Вызов завершен';
         default:
             return '-';
     }
@@ -91,10 +98,16 @@ const formatMoscowTime = (datetime) => {
 };
 
 const refreshCalls = () => {
+    isLoading.value = true;
+
     router.get(route('calls.index'), {}, {
         preserveState: true,
         preserveScroll: true,
+        onSuccess: () => {
+            isLoading.value = false;
+        },
         onError: (errors) => {
+            isLoading.value = false;
             showToast("Ошибка при обновлении данных", "error");
         },
     });
@@ -119,8 +132,13 @@ const refreshCalls = () => {
                 <PrimaryButton
                     @click="refreshCalls"
                     class="mb-4"
+                    :disabled="isLoading"
                 >
-                    Обновить
+                    <span v-if="isLoading" class="inline-flex items-center">
+                      <Spinner />
+                      Обновление...
+                    </span>
+                    <span v-else>Обновить</span>
                 </PrimaryButton>
                 <div class="max-lg:overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -130,7 +148,10 @@ const refreshCalls = () => {
                                 Время
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Телефон
+                                От кого
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Кому
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Длительность
@@ -149,6 +170,7 @@ const refreshCalls = () => {
                                 {{ call.call_time ? formatMoscowTime(call.call_time) : '' }}
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ call.phone_from }}</td>
+                            <td class="px-3 py-2 whitespace-nowrap">{{ call.phone_to }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ formatDuration(call.duration) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ getStatusText(call.status) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">

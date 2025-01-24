@@ -15,6 +15,7 @@ import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
 import SaleEditForm from "@/Components/SaleEditForm.vue";
 import Filters from "@/Components/Filters.vue";
+import Tooltip from "@/Components/Tooltip.vue";
 
 const {showToast} = useToast();
 
@@ -151,15 +152,15 @@ const calculateEndDate = () => {
                 break;
             case '1':
                 endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 29);
+                endDate.setDate(startDate.getDate() + 30);
                 break;
             case '3':
                 endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 92);
+                endDate.setDate(startDate.getDate() + 90);
                 break;
             case '6':
                 endDate = new Date(startDate);
-                endDate.setDate(startDate.getDate() + 182);
+                endDate.setDate(startDate.getDate() + 180);
                 break;
             case '12':
                 endDate = new Date(startDate);
@@ -173,11 +174,11 @@ const calculateEndDate = () => {
         if (endDate) {
             form.subscription_end_date = endDate.toISOString().split('T')[0];
         }
-    } else if (form.subscription_start_date && form.training_count && (categoryMap[form.training_count] === 'Блок 8 тренировок' || categoryMap[form.training_count] === 'Блок 20 тренировок')) {
+    } else if (form.subscription_start_date && form.training_count && (categoryMap[form.training_count] === '8' || categoryMap[form.training_count] === '20')) {
         // Обработка случая только с "Кол-во тренировок"
         const startDate = new Date(form.subscription_start_date);
         const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 182);
+        endDate.setDate(startDate.getDate() + 180);
         form.subscription_end_date = endDate.toISOString().split('T')[0];
     } else {
         form.subscription_end_date = null;
@@ -711,9 +712,11 @@ const changePage = (page) => {
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.pay_method }}</td>
                             <td class="px-3 py-2 whitespace-nowrap overflow-clip">
-                                <span :title="sale.comment" class="cursor-help">
-                                    {{ truncateText(sale?.comment, 15) }}
-                                </span>
+                                <Tooltip :content="sale.comment">
+                                    <template #trigger>
+                                        {{ truncateText(sale?.comment, 15) }}
+                                    </template>
+                                </Tooltip>
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <button @click="openModal(sale.client_id)"
