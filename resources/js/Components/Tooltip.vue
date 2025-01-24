@@ -17,7 +17,7 @@
         <div
             :id="tooltipId"
             role="tooltip"
-            class="absolute z-10 invisible inline-block px-2 py-2 text-white transition-opacity bg-gray-800 duration-300 rounded-lg shadow-sm opacity-0 tooltip normal-case max-w-sm whitespace-normal break-words"
+            class="tooltip-custom absolute z-10 invisible inline-block px-2 py-2 text-white bg-gray-800 rounded-lg shadow-sm opacity-0 tooltip normal-case max-w-sm whitespace-normal break-words"
         >
             {{ content }}
             <div class="tooltip-arrow" data-popper-arrow></div>
@@ -48,3 +48,12 @@ onMounted(() => {
     initTooltips();
 });
 </script>
+<style scoped>
+.tooltip-custom {
+    display: none;
+}
+
+.tooltip-custom.visible {
+    display: inline-block;
+}
+</style>

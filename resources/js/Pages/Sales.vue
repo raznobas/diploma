@@ -712,11 +712,9 @@ const changePage = (page) => {
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ sale.pay_method }}</td>
                             <td class="px-3 py-2 whitespace-nowrap overflow-clip">
-                                <Tooltip :content="sale.comment">
-                                    <template #trigger>
-                                        {{ truncateText(sale?.comment, 15) }}
-                                    </template>
-                                </Tooltip>
+                                <span :title="sale.comment" class="cursor-help">
+                                    {{ truncateText(sale?.comment, 15) }}
+                                </span>
                             </td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <button @click="openModal(sale.client_id)"
