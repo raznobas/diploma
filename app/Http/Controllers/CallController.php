@@ -59,8 +59,8 @@ class CallController extends Controller
         $call = Call::where('entry_id', $json['entry_id'])->first();
 
         if ($call) {
-            // Проверяем, что новое событие имеет большее значение seq
-            if ($json['seq'] > $call->last_seq) {
+            // Проверяем, что новое событие имеет большее или равное значение seq
+            if ($json['seq'] >= $call->last_seq) {
                 // Если текущий статус не является завершенным, обновляем его
                 if (!in_array($call->status, ['answered', 'missed'])) {
                     $call->update([
