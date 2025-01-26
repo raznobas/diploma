@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
 import ClientModal from "@/Components/ClientModal.vue";
 import {ref} from "vue";
-import {Head} from "@inertiajs/vue3";
+import {Head, router} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
 const props = defineProps({
@@ -32,6 +32,14 @@ const handleClientUpdated = (updatedClient) => {
 const closeModal = () => {
     showModal.value = false;
     selectedClient.value = null;
+};
+
+const onPageChange = (event) => {
+    const newPage = event.page;
+    router.get(route('tasks.trialsLessThanMonth', { page: newPage }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 </script>
 
@@ -69,7 +77,12 @@ const closeModal = () => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination :items="trialsLessThanMonth"/>
+                <Pagination
+                    :rows="trialsLessThanMonth.per_page"
+                    :totalRecords="trialsLessThanMonth.total"
+                    :first="(trialsLessThanMonth.current_page - 1) * trialsLessThanMonth.per_page"
+                    @page="onPageChange"
+                />
             </div>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated"/>

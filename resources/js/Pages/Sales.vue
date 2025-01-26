@@ -15,7 +15,6 @@ import dayjs from "dayjs";
 import Pagination from "@/Components/Pagination.vue";
 import SaleEditForm from "@/Components/SaleEditForm.vue";
 import Filters from "@/Components/Filters.vue";
-import Tooltip from "@/Components/Tooltip.vue";
 
 const {showToast} = useToast();
 
@@ -379,8 +378,8 @@ const resetFilters = () => {
     });
 };
 
-const changePage = (page) => {
-    filterForm.page = page;
+const onPageChange = (event) => {
+    filterForm.page = event.page;
     filterForm.get(route('sales.index'), {
         preserveState: true,
         preserveScroll: true,
@@ -733,7 +732,12 @@ const changePage = (page) => {
                         </tbody>
                     </table>
                 </div>
-                <Pagination :items="sales" @change-page="changePage" />
+                <Pagination
+                    :rows="sales.per_page"
+                    :totalRecords="sales.total"
+                    :first="(sales.current_page - 1) * sales.per_page"
+                    @page="onPageChange"
+                />
             </div>
         </div>
     </AuthenticatedLayout>

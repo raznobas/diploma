@@ -36,13 +36,6 @@ const openLeadModal = (call) => {
     showLeadModal.value = true;
 };
 
-const changePage = (page) => {
-    axios.get(route('calls.index'), {
-        preserveState: true,
-        preserveScroll: true,
-    });
-};
-
 const closeModal = () => {
     showModal.value = false;
     showLeadModal.value = false;
@@ -54,7 +47,7 @@ const createLead = (formData, callId) => {
     callId = leadsCall.value.id;
 
     // Передаем callId в маршрут
-    formData.post(route('clients.store', { callId }), {
+    formData.post(route('clients.store', {callId}), {
         onSuccess: () => {
             showToast("Лид успешно добавлен!", "success");
             closeModal();
@@ -112,6 +105,14 @@ const refreshCalls = () => {
         },
     });
 };
+
+const onPageChange = (event) => {
+    const newPage = event.page;
+    router.get(route('calls.index', { page: newPage }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -135,7 +136,7 @@ const refreshCalls = () => {
                     :disabled="isLoading"
                 >
                     <span v-if="isLoading" class="inline-flex items-center">
-                      <Spinner />
+                      <Spinner/>
                       Обновление...
                     </span>
                     <span v-else>Обновить</span>
@@ -174,17 +175,24 @@ const refreshCalls = () => {
                             <td class="px-3 py-2 whitespace-nowrap">{{ formatDuration(call.duration) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ getStatusText(call.status) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
-                                <button v-if="call.client_id" @click="openModal(call.client_id)" class="text-indigo-600 hover:text-indigo-900">
+                                <button v-if="call.client_id" @click="openModal(call.client_id)"
+                                        class="text-indigo-600 hover:text-indigo-900">
                                     Карточка
                                 </button>
-                                <button v-else @click="openLeadModal(call)" class="text-indigo-600 hover:text-indigo-900">
+                                <button v-else @click="openLeadModal(call)"
+                                        class="text-indigo-600 hover:text-indigo-900">
                                     Создать лид
                                 </button>
                             </td>
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination :items="calls" page-param="page" @change-page="changePage"/>
+                    <Pagination
+                        :rows="calls.per_page"
+                        :totalRecords="calls.total"
+                        :first="(calls.current_page - 1) * calls.per_page"
+                        @page="onPageChange"
+                    />
                 </div>
             </div>
         </div>

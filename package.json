@@ -20,6 +20,8 @@
     "dependencies": {
         "dayjs": "^1.11.11",
         "flowbite": "^2.5.2",
+        "primevue": "^4.2.5",
+        "tailwindcss-primeui": "^0.4.0",
         "vue-multiselect": "^3.0.0",
         "vue3-toastify": "^0.2.3"
     }

@@ -52,6 +52,14 @@ const sortBy = (field, value) => {
         preserveScroll: true,
     });
 };
+
+const onPageChange = (event) => {
+    const newPage = event.page;
+    form.get(route('tasks.renewals', { page: newPage }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -135,7 +143,12 @@ const sortBy = (field, value) => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination :items="clientsToRenewal"/>
+                <Pagination
+                    :rows="clientsToRenewal.per_page"
+                    :totalRecords="clientsToRenewal.total"
+                    :first="(clientsToRenewal.current_page - 1) * clientsToRenewal.per_page"
+                    @page="onPageChange"
+                />
             </div>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated"/>

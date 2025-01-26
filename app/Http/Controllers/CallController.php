@@ -59,19 +59,34 @@ class CallController extends Controller
         $call = Call::where('entry_id', $json['entry_id'])->first();
 
         if ($call) {
-            if (!in_array($call->status, ['answered', 'missed'])) {
-                // Обновляем статус только если текущий статус не является завершенным
-                $call->update(['status' => $json['call_state']]);
+            // Проверяем, что новое событие имеет большее значение seq
+            if ($json['seq'] > $call->last_seq) {
+                // Если текущий статус не является завершенным, обновляем его
+                if (!in_array($call->status, ['answered', 'missed'])) {
+                    $call->update([
+                        'status' => $json['call_state'],
+                        'last_seq' => $json['seq'], // Обновляем last_seq
+                    ]);
 
-                Log::info('Запись звонка успешно обновлена', [
-                    'id' => $call->id,
-                    'new_status' => $json['call_state'],
-                ]);
+                    Log::info('Запись звонка успешно обновлена', [
+                        'id' => $call->id,
+                        'new_status' => $json['call_state'],
+                        'new_seq' => $json['seq'],
+                    ]);
+                } else {
+                    Log::info('Статус звонка не обновлен, так как он уже завершен', [
+                        'id' => $call->id,
+                        'current_status' => $call->status,
+                        'new_status (not_updated)' => $json['call_state'],
+                    ]);
+                }
             } else {
-                Log::info('Статус звонка не обновлен, так как он уже завершен', [
+                Log::info('Событие проигнорировано, так как оно устарело', [
                     'id' => $call->id,
                     'current_status' => $call->status,
-                    'new_status (not_updated)' => $json['call_state'],
+                    'new_status (ignored)' => $json['call_state'],
+                    'current_seq' => $call->last_seq,
+                    'new_seq' => $json['seq'],
                 ]);
             }
         } else {
@@ -81,6 +96,46 @@ class CallController extends Controller
             // Логируем успешное создание записи
             Log::info('Запись звонка успешно создана', ['call_id' => $call->id]);
         }
+    }
+
+    private function parseCallData(array $json): array
+    {
+        $toPhone = isset($json['to']['extension'])
+            ? $json['to']['line_number'] // Используем line_number, если есть extension
+            : $json['to']['number']; // Иначе используем number
+
+        // Поиск записи по телефону
+        $gym = Gym::where('phone', $toPhone)
+            ->orWhere('phone', $this->swapSevenAndEight($toPhone))
+            ->first();
+
+        $directorId = $gym ? $gym->director_id : 3; // ID тестового директора
+
+        $fromPhone = $json['from']['number'];
+
+        // Поиск клиента или лида по номеру с 7 или 8
+        $client = Client::where('director_id', $directorId)
+            ->where(function ($query) use ($fromPhone) {
+                $query->where('phone', $fromPhone)
+                    ->orWhere('phone', $this->swapSevenAndEight($fromPhone));
+            })
+            ->first();
+
+        $callData = [
+            'entry_id' => $json['entry_id'],
+            'phone_from' => $json['from']['number'],
+            'phone_to' => $toPhone,
+            'call_time' => Carbon::createFromTimestamp($json['timestamp']),
+            'status' => $json['call_state'],
+            'client_id' => $client ? $client->id : null,
+            'director_id' => $directorId,
+            'last_seq' => $json['seq'],
+        ];
+
+        // Логируем возвращаемые данные
+        Log::info('Данные для создания записи звонка', ['callData' => $callData]);
+
+        return $callData;
     }
 
     public function handleCallSummary(Request $request)
@@ -120,54 +175,6 @@ class CallController extends Controller
                 'entry_id' => $json['entry_id'],
             ]);
         }
-    }
-
-    private function parseCallData(array $json): array
-    {
-        $toPhone = isset($json['to']['extension'])
-            ? $json['to']['line_number'] // Используем line_number, если есть extension
-            : $json['to']['number']; // Иначе используем number
-
-        // Поиск записи по телефону
-        $gym = Gym::where('phone', $toPhone)
-            ->orWhere('phone', $this->swapSevenAndEight($toPhone))
-            ->first();
-
-        $directorId = $gym ? $gym->director_id : 3; // ID тестового директора
-
-        // Логируем результат поиска зала
-        Log::info('Результат поиска зала', [
-            'gym' => $gym,
-            'director_id' => $directorId,
-        ]);
-
-        $fromPhone = $json['from']['number'];
-
-        // Поиск клиента или лида по номеру с 7 или 8
-        $client = Client::where('director_id', $directorId)
-            ->where(function ($query) use ($fromPhone) {
-                $query->where('phone', $fromPhone)
-                    ->orWhere('phone', $this->swapSevenAndEight($fromPhone));
-            })
-            ->first();
-
-        // Логируем результат поиска клиента
-        Log::info('Результат поиска клиента', ['client' => $client]);
-
-        $callData = [
-            'entry_id' => $json['entry_id'],
-            'phone_from' => $json['from']['number'],
-            'phone_to' => $toPhone,
-            'call_time' => Carbon::createFromTimestamp($json['timestamp']),
-            'status' => $json['call_state'],
-            'client_id' => $client ? $client->id : null,
-            'director_id' => $directorId,
-        ];
-
-        // Логируем возвращаемые данные
-        Log::info('Данные для создания записи звонка', ['callData' => $callData]);
-
-        return $callData;
     }
 
     function swapSevenAndEight($phone)

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import dayjs from "dayjs";
-import {Head, useForm, usePage} from "@inertiajs/vue3";
+import {Head, router, useForm, usePage} from "@inertiajs/vue3";
 import ClientModal from "@/Components/ClientModal.vue";
 import {onMounted, ref} from "vue";
 import Pagination from "@/Components/Pagination.vue";
@@ -85,6 +85,14 @@ const submitEditTask = () => {
         },
     });
 };
+
+const onPageChange = (event) => {
+    const newPage = event.page;
+    router.get(route('tasks.index', { page: newPage }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -142,7 +150,12 @@ const submitEditTask = () => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination :items="tasks"/>
+                    <Pagination
+                        :rows="tasks.per_page"
+                        :totalRecords="tasks.total"
+                        :first="(tasks.current_page - 1) * tasks.per_page"
+                        @page="onPageChange"
+                    />
                 </div>
             </div>
             <Modal :show="showTaskEdit" @close="showTaskEdit = false">

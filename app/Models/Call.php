@@ -16,7 +16,7 @@ class Call extends Model
         'call_time',
         'duration',
         'status',
-        'answered_duration',
+        'last_seq',
         'client_id',
         'director_id'
     ];

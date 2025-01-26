@@ -269,22 +269,37 @@ const resetFiltersAppointments = () => {
     });
 };
 
-const changePage = (page) => {
-    // Сбрасываем вторую форму
+const page1 = ref(1); // Текущая страница для первой таблицы
+
+const page2 = ref(1); // Текущая страница для второй таблицы
+const onPageChange1 = (event) => {
+    page1.value = event.page;
+
+    // Сбрасываем пагинацию и фильтры второй таблицы
     resetForm(filterFormAppointments);
     filterFormAppointments.page_appointments = 1;
 
-    // Обновляем текущую форму
-    changePage(filterForm, 'page', page, 'leads.index');
+    // Выполняем запрос для первой таблицы
+    filterForm.page = page1.value;
+    filterForm.get(route('leads.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 
-const changePageAppointments = (page) => {
-    // Сбрасываем первую форму
+const onPageChange2 = (event) => {
+    page2.value = event.page;
+
+    // Сбрасываем пагинацию и фильтры первой таблицы
     resetForm(filterForm);
     filterForm.page = 1;
 
-    // Обновляем текущую форму
-    changePage(filterFormAppointments, 'page_appointments', page, 'leads.index');
+    // Выполняем запрос для второй таблицы
+    filterFormAppointments.page_appointments = page2.value;
+    filterFormAppointments.get(route('leads.index'), {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 
 const resetForm = (form) => {
@@ -525,7 +540,12 @@ const copyClientInfo = (client) => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination :items="leadAppointments" page-param="page_appointments" @change-page="changePageAppointments"/>
+                    <Pagination
+                        :rows="leadAppointments.per_page"
+                        :totalRecords="leadAppointments.total"
+                        :first="(leadAppointments.current_page - 1) * leadAppointments.per_page"
+                        @page="onPageChange2"
+                    />
                 </div>
             </div>
             <div>
@@ -600,9 +620,36 @@ const copyClientInfo = (client) => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination :items="leads" page-param="page" @change-page="changePage"/>
+                    <Pagination
+                        :rows="leads.per_page"
+                        :totalRecords="leads.total"
+                        :first="(leads.current_page - 1) * leads.per_page"
+                        @page="onPageChange1"
+                    />
                 </div>
             </div>
         </div>
     </AuthenticatedLayout>
 </template>
+<style scoped>
+
+/* Убираем задний фон всего пагинатора */
+.custom-paginator :deep(.p-paginator) {
+    background-color: transparent; /* Прозрачный фон */
+    border: none; /* Убираем границу */
+    padding: 0; /* Убираем отступы */
+}
+
+/* Стили для активной кнопки текущей страницы */
+.custom-paginator :deep(.p-paginator-page.p-paginator-page-selected) {
+    background-color: black; /* Черный фон */
+    color: white; /* Белый текст */
+    border-color: black; /* Черная граница */
+}
+
+/* Стили для кнопок при наведении */
+.custom-paginator :deep(.p-paginator-page:not(.p-paginator-page-selected):hover) {
+    background-color: #e5e7eb; /* Светло-серый фон при наведении */
+    color: #1f2937; /* Темно-серый текст */
+}
+</style>

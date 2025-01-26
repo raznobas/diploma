@@ -4,8 +4,6 @@ import dayjs from "dayjs";
 import 'dayjs/locale/ru';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import {Head} from "@inertiajs/vue3";
-import Pagination from "@/Components/Pagination.vue";
-import {computed} from "vue";
 import Tooltip from "@/Components/Tooltip.vue";
 
 const props = defineProps(['analytics']);

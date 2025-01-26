@@ -1,7 +1,7 @@
 <script setup>
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import InputError from "@/Components/InputError.vue";
-import {Head, useForm, usePage} from "@inertiajs/vue3";
+import {Head, router, useForm, usePage} from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import {ref} from "vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
@@ -119,8 +119,8 @@ const resetFilters = () => {
     });
 };
 
-const changePage = (page) => {
-    filterForm.page = page;
+const onPageChange = (event) => {
+    filterForm.page = event.page;
     filterForm.get(route('clients.index'), {
         preserveState: true,
         preserveScroll: true,
@@ -245,7 +245,12 @@ const changePage = (page) => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination :items="clients" @change-page="changePage" />
+                <Pagination
+                    :rows="clients.per_page"
+                    :totalRecords="clients.total"
+                    :first="(clients.current_page - 1) * clients.per_page"
+                    @page="onPageChange"
+                />
             </div>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated" />

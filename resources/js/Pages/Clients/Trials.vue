@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import dayjs from "dayjs";
-import {Head, useForm, usePage} from "@inertiajs/vue3";
+import {Head, router, useForm, usePage} from "@inertiajs/vue3";
 import ClientModal from "@/Components/ClientModal.vue";
 import {ref} from "vue";
 import Pagination from "@/Components/Pagination.vue";
@@ -29,6 +29,14 @@ const handleClientUpdated = (updatedClient) => {
 const closeModal = () => {
     showModal.value = false;
     selectedClient.value = null;
+};
+
+const onPageChange = (event) => {
+    const newPage = event.page;
+    router.get(route('clients.trials', { page: newPage }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
 };
 </script>
 
@@ -69,7 +77,12 @@ const closeModal = () => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination :items="trialClients" />
+                <Pagination
+                    :rows="trialClients.per_page"
+                    :totalRecords="trialClients.total"
+                    :first="(trialClients.current_page - 1) * trialClients.per_page"
+                    @page="onPageChange"
+                />
             </div>
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated" />

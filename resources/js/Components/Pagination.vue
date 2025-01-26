@@ -1,92 +1,95 @@
 <template>
-    <nav class="mt-4">
-        <ul class="flex justify-center">
-            <li v-for="link in getVisibleLinks()" :key="link.label" class="sm:mx-1 mx-0">
-                <Link :href="link.url || ''" v-html="getLocalizedLabel(link.label)" class="px-2 py-1 rounded-md"
-                      :class="{ 'bg-gray-800 text-white': link.active }" @click.prevent="handlePageChange(link)"/>
-            </li>
-        </ul>
-        <div v-if="items && items.total" class="mt-3 text-center">
-            Всего записей: {{ items.total }}
+    <div class="custom-paginator mt-3">
+        <!-- Условный рендеринг: если записей нет -->
+        <div v-if="totalRecords === 0" class="text-center">
+            Записи отсутствуют.
         </div>
-    </nav>
+
+        <!-- Условный рендеринг: если записи есть -->
+        <template v-else>
+            <!-- Компонент Paginator -->
+            <Paginator
+                :rows="rows"
+                :totalRecords="totalRecords"
+                :first="first"
+                @page="handlePageChange"
+            />
+
+            <!-- Блок с общим количеством записей -->
+            <div class="mt-1 text-center">
+                Всего записей: {{ totalRecords }}
+            </div>
+        </template>
+    </div>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3';
+import { defineProps, defineEmits } from 'vue';
+import Paginator from 'primevue/paginator';
 
+// Определяем props
 const props = defineProps({
-    items: Object,
-    pageParam: String, // параметр для имени параметра запроса (нужно для того, чтобы не было конфликтов, когда на странице две пагинации)
+    rows: {
+        type: Number,
+        required: true,
+    },
+    totalRecords: {
+        type: Number,
+        required: true,
+    },
+    first: {
+        type: Number,
+        required: true,
+    },
 });
 
-const emit = defineEmits(['change-page']);
+// Определяем emits
+const emit = defineEmits(['page']);
 
-const getLocalizedLabel = (label) => {
-    if (label === '&laquo; Previous') {
-        return '&laquo; Предыдущая';
-    } else if (label === 'Next &raquo;') {
-        return 'Следующая &raquo;';
-    }
-    return label;
-};
-
-const visiblePages = 5; // Количество видимых страниц вокруг текущей
-
-const getVisibleLinks = () => {
-    const links = props.items.links;
-    const currentPage = links.find(link => link.active)?.label || 1;
-    const startPage = Math.max(1, currentPage - Math.floor(visiblePages / 2));
-    const endPage = Math.min(links.length - 2, startPage + visiblePages - 1);
-
-    const visibleLinks = [];
-
-    if (startPage > 1) {
-        visibleLinks.push(links[0]); // Первая страница
-        if (startPage > 2) {
-            visibleLinks.push({ label: '...', url: null });
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        visibleLinks.push(links[i]);
-    }
-
-    if (endPage < links.length - 2) {
-        if (endPage < links.length - 3) {
-            visibleLinks.push({ label: '...', url: null });
-        }
-        visibleLinks.push(links[links.length - 1]); // Последняя страница
-    }
-
-    return visibleLinks;
-};
-
-const handlePageChange = (link) => {
-    if (link.label === '&laquo; Previous') {
-        // Переход на предыдущую страницу
-        emit('change-page', props.items.current_page - 1);
-    } else if (link.label === 'Next &raquo;') {
-        // Переход на следующую страницу
-        emit('change-page', props.items.current_page + 1);
-    } else if (link.label !== '...') {
-        // Переход на конкретную страницу
-        emit('change-page', parseInt(link.label));
-    }
+const handlePageChange = (event) => {
+    // Преобразуем индексацию с 0 на 1, так как PrimeVue использует индексацию с 0, а Laravel с 1
+    const newEvent = {
+        ...event,
+        page: event.page + 1, // Преобразуем индексацию
+    };
+    emit('page', newEvent); // Эмитим событие с исправленной индексацией
 };
 </script>
 
 <style scoped>
-.pagination li {
-    display: inline-block;
+/* Убираем задний фон всего пагинатора */
+.custom-paginator :deep(.p-paginator) {
+    background-color: transparent;
+    border: none;
+    padding: 0;
 }
 
-.pagination .disabled {
-    opacity: 0.5;
-    pointer-events: none;
+/* Стили для активной кнопки текущей страницы */
+.custom-paginator :deep(.p-paginator-page.p-paginator-page-selected) {
+    background-color: #1f2937;
+    color: white;
+    border-color: #1f2937;
 }
 
-.pagination .ellipsis {
-    pointer-events: none;
+.custom-paginator :deep(.p-paginator-page) {
+    height: 2rem;
+    min-width: 2rem;
+}
+
+/* Стили для кнопок при наведении */
+.custom-paginator :deep(.p-paginator-page:not(.p-paginator-page-selected):hover) {
+    background-color: #e5e7eb;
+    color: #1f2937;
+}
+@media (max-width: 768px) {
+    .custom-paginator :deep(.p-paginator-page),
+    .custom-paginator :deep(.p-paginator-prev),
+    .custom-paginator :deep(.p-paginator-next),
+    .custom-paginator :deep(.p-paginator-first),
+    .custom-paginator :deep(.p-paginator-last) {
+        height: 1.5rem;
+        min-width: 1.5rem;
+        margin: 0 2px;
+    }
 }
 </style>
