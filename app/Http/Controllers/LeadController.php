@@ -186,10 +186,11 @@ class LeadController extends Controller
             return response()->json(['error' => 'Зал не найден'], 404);
         }
 
-        $directorId = $gym->director_id ?? 3; // Если директора зала не нашли, тогда записываем к "общему" директору
+        $directorId = $gym->director_id ?? 3; // Если директора зала не нашли, тогда записываем к "общему, тестовому" директору
 
-        $adSource = null;
-        if ($gym->director_id === null) {
+        // Формируем ad_source
+        $adSource = 'САЙТ'; // По умолчанию
+        if ($gym->director_id === null && !empty($gym->label)) {
             $adSource = 'extrimpower.ru ' . $gym->label; // Если director_id null, записываем label зала в ad_source
         }
 
