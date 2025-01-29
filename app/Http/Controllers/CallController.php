@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Gym;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -55,47 +56,50 @@ class CallController extends Controller
         // Обработка данных звонка
         $callData = $this->parseCallData($json);
 
-        // Поиск существующей записи по entry_id
-        $call = Call::where('entry_id', $json['entry_id'])->first();
+        // Начинаем транзакцию для безопасного изменения данных
+        DB::transaction(function () use ($json, $callData) {
+            // Поиск существующей записи по entry_id с блокировкой на обновление
+            $call = Call::where('entry_id', $json['entry_id'])->lockForUpdate()->first();
 
-        if ($call) {
-            // Проверяем, что новое событие имеет большее или равное значение seq
-            if ($json['seq'] >= $call->last_seq) {
-                // Если текущий статус не является завершенным, обновляем его
-                if (!in_array($call->status, ['answered', 'missed'])) {
-                    $call->update([
-                        'status' => $json['call_state'],
-                        'last_seq' => $json['seq'], // Обновляем last_seq
-                    ]);
+            if ($call) {
+                // Проверяем, что новое событие имеет большее или равное значение seq
+                if ($json['seq'] >= $call->last_seq) {
+                    // Если текущий статус не является завершенным, обновляем его
+                    if (!in_array($call->status, ['answered', 'missed'])) {
+                        $call->update([
+                            'status' => $json['call_state'],
+                            'last_seq' => $json['seq'], // Обновляем last_seq
+                        ]);
 
-                    Log::info('Запись звонка успешно обновлена', [
-                        'id' => $call->id,
-                        'new_status' => $json['call_state'],
-                        'new_seq' => $json['seq'],
-                    ]);
+                        Log::info('Запись звонка успешно обновлена', [
+                            'id' => $call->id,
+                            'new_status' => $json['call_state'],
+                            'new_seq' => $json['seq'],
+                        ]);
+                    } else {
+                        Log::info('Статус звонка не обновлен, так как он уже завершен', [
+                            'id' => $call->id,
+                            'current_status' => $call->status,
+                            'new_status (not_updated)' => $json['call_state'],
+                        ]);
+                    }
                 } else {
-                    Log::info('Статус звонка не обновлен, так как он уже завершен', [
+                    Log::info('Событие проигнорировано, так как оно устарело', [
                         'id' => $call->id,
                         'current_status' => $call->status,
-                        'new_status (not_updated)' => $json['call_state'],
+                        'new_status (ignored)' => $json['call_state'],
+                        'current_seq' => $call->last_seq,
+                        'new_seq' => $json['seq'],
                     ]);
                 }
             } else {
-                Log::info('Событие проигнорировано, так как оно устарело', [
-                    'id' => $call->id,
-                    'current_status' => $call->status,
-                    'new_status (ignored)' => $json['call_state'],
-                    'current_seq' => $call->last_seq,
-                    'new_seq' => $json['seq'],
-                ]);
-            }
-        } else {
-            // Если записи нет, создаем новую
-            $call = Call::create($callData);
+                // Если записи нет, создаем новую
+                $call = Call::create($callData);
 
-            // Логируем успешное создание записи
-            Log::info('Запись звонка успешно создана', ['call_id' => $call->id]);
-        }
+                // Логируем успешное создание записи
+                Log::info('Запись звонка успешно создана', ['call_id' => $call->id]);
+            }
+        });
     }
 
     private function parseCallData(array $json): array
@@ -155,26 +159,29 @@ class CallController extends Controller
 
         $duration = $json['end_time'] - $json['create_time'];
 
-        // Поиск существующей записи по entry_id
-        $call = Call::where('entry_id', $json['entry_id'])->first();
+        // Начинаем транзакцию для безопасного обновления данных
+        DB::transaction(function () use ($json, $status, $duration) {
+            // Поиск существующей записи по entry_id с блокировкой на обновление
+            $call = Call::where('entry_id', $json['entry_id'])->lockForUpdate()->first();
 
-        if ($call) {
-            // Если запись существует, обновляем её поля
-            $call->update([
-                'duration' => $duration,
-                'status' => $status,
-            ]);
+            if ($call) {
+                // Если запись существует, обновляем её поля
+                $call->update([
+                    'duration' => $duration,
+                    'status' => $status,
+                ]);
 
-            // Логируем успешное обновление записи
-            Log::info('Запись звонка успешно обновлена (завершение)', [
-                'id' => $call->id,
-            ]);
-        } else {
-            // Если записи нет, логируем ошибку
-            Log::warning('Запись звонка не найдена для обновления', [
-                'entry_id' => $json['entry_id'],
-            ]);
-        }
+                // Логируем успешное обновление записи
+                Log::info('Запись звонка успешно обновлена (завершение)', [
+                    'id' => $call->id,
+                ]);
+            } else {
+                // Если записи нет, логируем ошибку
+                Log::warning('Запись звонка не найдена для обновления', [
+                    'entry_id' => $json['entry_id'],
+                ]);
+            }
+        });
     }
 
     function swapSevenAndEight($phone)
