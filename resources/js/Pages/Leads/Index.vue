@@ -353,10 +353,10 @@ const copyClientInfo = (client) => {
 
     navigator.clipboard.writeText(clientInfo)
         .then(() => {
-            alert('Информация о клиенте скопирована в буфер обмена!');
+            showToast("Информация о клиенте скопирована в буфер обмена!", "success");
         })
         .catch(() => {
-            alert('Не удалось скопировать информацию о клиенте.');
+            showToast("Не удалось скопировать информацию о клиенте.", "error");
         });
 };
 </script>

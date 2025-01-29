@@ -10,17 +10,10 @@ use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\WhatsappController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-//Route::get('/', function () {
-//    return Inertia::render('Welcome', [
-//        'canLogin' => Route::has('login'),
-//        'canRegister' => Route::has('register'),
-//        'laravelVersion' => Application::VERSION,
-//        'phpVersion' => PHP_VERSION,
-//    ]);
-//});
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -70,6 +63,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/no-show-leads', [TaskController::class, 'noShowLeads'])->name('tasks.noShowLeads');
         Route::get('/renewals', [TaskController::class, 'renewals'])->name('tasks.renewals');
         Route::get('/trials-month', [TaskController::class, 'trialsLessThanMonth'])->name('tasks.trialsLessThanMonth');
+    });
+
+    Route::prefix('whatsapp')->group(function () {
+        Route::get('/', [WhatsappController::class, 'index'])->name('whatsapp.index');
+        Route::post('/get-iframe', [WhatsappController::class, 'getIframeUrl'])->name('whatsapp.getIframeUrl');
     });
 
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');

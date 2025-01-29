@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'wazzup' => [
+        'api_key' => env('WAZZUP_API_KEY'),
+    ],
+
 ];

@@ -15,6 +15,9 @@ const props = defineProps({
     client: Object,
 });
 
+const iframeUrl = ref(null);
+const showIframe = ref(false);
+
 const emit = defineEmits(['close', 'client-updated']);
 const formEdit = useForm({
     id: props?.client?.id,
@@ -143,6 +146,7 @@ const deleteClient = async () => {
 const closeModal = () => {
     emit('close');
     isEditing.value = false;
+    iframeUrl.value = null;
 };
 
 // запрос на получение всех задач текущего клиента
@@ -182,11 +186,58 @@ const copyClientInfo = () => {
 
     navigator.clipboard.writeText(clientInfo)
         .then(() => {
-            alert('Информация о клиенте скопирована в буфер обмена!');
+            showToast("Информация о клиенте скопирована в буфер обмена!", "success");
         })
         .catch(() => {
-            alert('Не удалось скопировать информацию о клиенте.');
+            showToast("Не удалось скопировать информацию о клиенте", "error");
         });
+};
+
+const fetchIframeUrl = async () => {
+    try {
+        // Получаем номер телефона из props.client.phone
+        let phone = props.client.phone;
+
+        // Убираем все нецифровые символы
+        phone = phone.replace(/\D/g, '');
+
+        // Если номер начинается с 8, заменяем на 7
+        if (phone.startsWith('8')) {
+            phone = '7' + phone.slice(1);
+        }
+
+        // Проверяем, что номер состоит из 11 цифр и начинается с 7
+        if (!/^7\d{10}$/.test(phone)) {
+            showToast("Номер телефона должен начинаться с 7 и состоять из 11 цифр", "error");
+        }
+
+        // Данные, которые отправляются на бэкенд
+        const data = {
+            user: { // TODO: создать отдельную таблицу с пользователями wazzup
+                id: '1',
+                name: 'Алексеевская',
+            },
+            scope: 'card',
+            filter: [
+                {
+                    chatType: 'whatsapp',
+                    chatId: phone,
+                },
+            ],
+            activeChat: {
+                chatType: 'whatsapp',
+                chatId: phone
+            },
+        };
+
+        // Отправляем POST-запрос на бэкенд
+        const response = await axios.post(route('whatsapp.getIframeUrl'), data);
+        iframeUrl.value = response.data.url;
+        showIframe.value = true;
+    } catch (error) {
+        showToast("Произошла ошибка", "error");
+        console.error('Ошибка при получении iframe URL:', error);
+    }
 };
 
 </script>
@@ -335,6 +386,9 @@ const copyClientInfo = () => {
                             </div>
                         </form>
                     </div>
+                    <PrimaryButton size="small" v-if="client.phone" class="mt-2" @click="fetchIframeUrl">
+                        Написать в WhatsApp
+                    </PrimaryButton>
                     <form @submit.prevent="submit">
                         <div class="mt-2 flex">
                             <h3 class="text-md font-medium mr-2">Задача на дату</h3>
@@ -456,6 +510,12 @@ const copyClientInfo = () => {
                     </div>
                 </div>
             </div>
+        </div>
+    </Modal>
+    <!-- Модальное окно для iframe -->
+    <Modal :show="showIframe" :max-width="'7xl'" @close="showIframe = false">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <iframe v-if="iframeUrl" :src="iframeUrl" allow="microphone *; clipboard-read *; clipboard-write *" class="w-full h-[80vh]"></iframe>
         </div>
     </Modal>
 </template>

@@ -116,6 +116,7 @@ const hasAbility = (ability) => {
                                         <DropdownLink v-if="$page.props.auth.role === 'director'"
                                                       :href="route('analytics.index')"> Аналитика</DropdownLink>
                                         <DropdownLink :href="route('export.index')"> Экспорт</DropdownLink>
+                                        <DropdownLink :href="route('whatsapp.index')"> WhatsApp</DropdownLink>
                                         <DropdownLink :href="route('logout')" method="post" as="button">
                                             Выйти
                                         </DropdownLink>
@@ -202,6 +203,7 @@ const hasAbility = (ability) => {
                             <ResponsiveNavLink v-if="$page.props.auth.role === 'director'"
                                                :href="route('analytics.index')"> Аналитика</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('export.index')"> Экспорт</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('whatsapp.index')"> WhatsApp</ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">
                                 Выйти
                             </ResponsiveNavLink>
