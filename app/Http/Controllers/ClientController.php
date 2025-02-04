@@ -163,15 +163,23 @@ class ClientController extends Controller
             return response()->json([]);
         }
 
+        // Генерируем варианты номера телефона
+        $phoneVariants = $this->getPhoneVariants($query);
+
         $clients = Client::select('id', 'name', 'surname', 'patronymic', 'phone', 'ad_source', 'is_lead')
             ->where('director_id', auth()->user()->director_id) // Ограничиваем поиск по director_id
             ->when($isLead !== null, function ($q) use ($isLead) {
                 return $q->where('is_lead', $isLead);
             })
-            ->where(function ($q) use ($query) {
-                $q->where('surname', 'like', "%$query%")
-                    ->orWhere('name', 'like', "%$query%")
-                    ->orWhere('patronymic', 'like', "%$query%");
+            ->where(function ($q) use ($query, $phoneVariants) {
+                $q->where('surname', 'like', "$query%")
+                    ->orWhere('name', 'like', "$query%")
+                    ->orWhere('patronymic', 'like', "$query%");
+
+                // Добавляем поиск по всем вариантам номера телефона
+                foreach ($phoneVariants as $variant) {
+                    $q->orWhere('phone', 'like', "$variant%");
+                }
             })
             ->get();
 
@@ -347,5 +355,41 @@ class ClientController extends Controller
             $currentPage,
             ['path' => request()->url(), 'query' => request()->query()]
         );
+    }
+
+    protected function getPhoneVariants($phone)
+    {
+        // Удаляем все нецифровые символы
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        // Если строка пустая, возвращаем пустой массив
+        if (empty($phone)) {
+            return [];
+        }
+
+        $variants = [];
+
+        // Если номер начинается с 8, добавляем варианты с 7 и +7
+        if ($phone[0] === '8') {
+            $variants[] = '7' . substr($phone, 1); // Заменяем 8 на 7
+            $variants[] = '+7' . substr($phone, 1); // Заменяем 8 на +7
+        }
+
+        // Если номер начинается с 7, добавляем варианты с 8 и +7
+        if ($phone[0] === '7') {
+            $variants[] = '8' . substr($phone, 1); // Заменяем 7 на 8
+            $variants[] = '+7' . substr($phone, 1); // Заменяем 7 на +7
+        }
+
+        // Если номер начинается с +7, добавляем варианты с 8 и 7
+        if (substr($phone, 0, 2) === '+7') {
+            $variants[] = '8' . substr($phone, 2); // Заменяем +7 на 8
+            $variants[] = '7' . substr($phone, 2); // Заменяем +7 на 7
+        }
+
+        // Добавляем оригинальный номер
+        $variants[] = $phone;
+
+        return $variants;
     }
 }

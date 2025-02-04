@@ -17,6 +17,7 @@ const props = defineProps({
 
 const iframeUrl = ref(null);
 const showIframe = ref(false);
+const wazzupUser = usePage().props.auth.wazzup_user;
 
 const emit = defineEmits(['close', 'client-updated']);
 const formEdit = useForm({
@@ -213,9 +214,9 @@ const fetchIframeUrl = async () => {
 
         // Данные, которые отправляются на бэкенд
         const data = {
-            user: { // TODO: создать отдельную таблицу с пользователями wazzup
-                id: '1',
-                name: 'Алексеевская',
+            user: {
+                id: wazzupUser.id,
+                name: wazzupUser.name,
             },
             scope: 'card',
             filter: [
@@ -252,7 +253,7 @@ const fetchIframeUrl = async () => {
                         <span v-else>Информация о клиенте</span>
                     </h3>
                     <div class="md:inline">
-                        <button title="Копировать данные клиента" type="button" @click="copyClientInfo" class="px-2 max-sm:py-1">
+                        <button title="Копировать данные" type="button" @click="copyClientInfo" class="px-2 max-sm:py-1">
                             <i class="fa fa-files-o text-xl text-blue-600" aria-hidden="true"></i>
                         </button>
                         <button title="Редактировать" type="button" @click="editClient" class="px-2 max-sm:py-1">
@@ -386,7 +387,7 @@ const fetchIframeUrl = async () => {
                             </div>
                         </form>
                     </div>
-                    <PrimaryButton size="small" v-if="client.phone" class="mt-2" @click="fetchIframeUrl">
+                    <PrimaryButton v-if="wazzupUser && client.phone" size="small" class="mt-2" @click="fetchIframeUrl">
                         Написать в WhatsApp
                     </PrimaryButton>
                     <form @submit.prevent="submit">

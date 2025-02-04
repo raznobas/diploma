@@ -9,6 +9,7 @@ import {Link, usePage} from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
 const abilities = ref([]);
+const wazzupUser = usePage().props.auth.wazzup_user;
 
 onMounted(() => {
     abilities.value = usePage().props.auth.abilities || [];
@@ -116,7 +117,7 @@ const hasAbility = (ability) => {
                                         <DropdownLink v-if="$page.props.auth.role === 'director'"
                                                       :href="route('analytics.index')"> Аналитика</DropdownLink>
                                         <DropdownLink :href="route('export.index')"> Экспорт</DropdownLink>
-                                        <DropdownLink :href="route('whatsapp.index')"> WhatsApp</DropdownLink>
+                                        <DropdownLink v-if="wazzupUser" :href="route('whatsapp.index')"> WhatsApp</DropdownLink>
                                         <DropdownLink :href="route('logout')" method="post" as="button">
                                             Выйти
                                         </DropdownLink>

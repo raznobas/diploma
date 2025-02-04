@@ -353,10 +353,10 @@ const copyClientInfo = (client) => {
 
     navigator.clipboard.writeText(clientInfo)
         .then(() => {
-            showToast("Информация о клиенте скопирована в буфер обмена!", "success");
+            showToast("Информация о лид скопирована в буфер обмена!", "success");
         })
         .catch(() => {
-            showToast("Не удалось скопировать информацию о клиенте.", "error");
+            showToast("Не удалось скопировать информацию о лид.", "error");
         });
 };
 </script>
@@ -392,7 +392,7 @@ const copyClientInfo = (client) => {
                                          :searchable="true"
                                          :max-height="400"
                                          :options-limit="200"
-                                         :placeholder="'Поиск по имени'"
+                                         :placeholder="'Поиск по ФИО или телефону'"
                                          :show-labels="false"
                                          :custom-label="fullName"
                                          :internal-search="false"
@@ -400,7 +400,10 @@ const copyClientInfo = (client) => {
                                          @search-change="searchClients"
                         >
                             <template v-slot:option="props">
-                                {{ props.option.surname }} {{ props.option.name }} {{ props.option.patronymic }}
+                                <div>
+                                    {{ props.option.surname }} {{ props.option.name }} {{ props.option.patronymic }}
+                                    <span v-if="props.option.phone" class="text-sm">{{ props.option.phone }}</span>
+                                </div>
                             </template>
                         </vue-multiselect>
                     </div>

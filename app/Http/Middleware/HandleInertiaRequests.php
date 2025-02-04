@@ -37,6 +37,11 @@ class HandleInertiaRequests extends Middleware
             $gym = \App\Models\Gym::where('director_id', $user->director_id)->first();
         }
 
+        $wazzup_user = null;
+        if ($user) {
+            $wazzup_user = \App\Models\WazzupUsers::where('director_id', $user->director_id)->first();
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -46,6 +51,10 @@ class HandleInertiaRequests extends Middleware
                 'director_id' => $user ? $user->director_id : null,
                 'gym' => $gym ? [ // Добавляем данные о зале
                     'label' => $gym->label,
+                ] : null,
+                'wazzup_user' => $wazzup_user ? [
+                    'id' => $wazzup_user->wazzup_id,
+                    'name' => $wazzup_user->name,
                 ] : null,
             ],
         ];

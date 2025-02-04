@@ -210,7 +210,7 @@ const closeModal = () => {
                             :searchable="true"
                             :max-height="400"
                             :options-limit="200"
-                            :placeholder="'Поиск'"
+                            :placeholder="'Поиск по ФИО или телефону'"
                             :show-labels="false"
                             :custom-label="fullName"
                             :internal-search="false"
@@ -220,7 +220,10 @@ const closeModal = () => {
                             @select="onClientSelect"
                         >
                             <template v-slot:option="props">
-                                {{ fullName(props.option) }}
+                                <div>
+                                    {{ fullName(props.option) }}
+                                    <span v-if="props.option.phone" class="text-sm">{{ props.option.phone }}</span>
+                                </div>
                             </template>
                         </vue-multiselect>
                     </div>

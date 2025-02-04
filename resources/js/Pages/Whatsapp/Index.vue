@@ -1,21 +1,22 @@
 <script setup>
 
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import {Head} from "@inertiajs/vue3";
+import {Head, usePage} from "@inertiajs/vue3";
 import {onMounted, ref} from "vue";
 import {useToast} from "@/useToast.js";
 const {showToast} = useToast();
 
 const iframeUrl = ref(null);
 const showIframe = ref(false);
+const wazzupUser = usePage().props.auth.wazzup_user;
 
 const fetchIframeUrl = async () => {
     try {
         // Данные, которые отправляются на бэкенд
         const data = {
-            user: { // TODO: создать отдельную таблицу с пользователями wazzup
-                id: '1',
-                name: 'Алексеевская',
+            user: {
+                id: wazzupUser.id,
+                name: wazzupUser.name,
             },
             scope: 'global'
         };

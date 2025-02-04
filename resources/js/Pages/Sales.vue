@@ -408,7 +408,7 @@ const onPageChange = (event) => {
                         <InputError :message="form.errors.sale_date" class="mt-2 text-sm text-red-600"/>
                     </div>
                     <div class="flex flex-col col-span-2 relative">
-                        <label for="fio" class="text-sm font-medium text-gray-700">Имя
+                        <label for="fio" class="text-sm font-medium text-gray-700">Клиент
                             <span v-if="form.client_object">
                                 <button type="button" @click="openModal(form.client_object)"
                                         class="text-indigo-600 hover:text-indigo-900">(карточка)</button>
@@ -421,7 +421,7 @@ const onPageChange = (event) => {
                             :searchable="true"
                             :max-height="400"
                             :options-limit="200"
-                            :placeholder="'Поиск'"
+                            :placeholder="'Поиск по ФИО или телефону'"
                             :show-labels="false"
                             :custom-label="fullName"
                             :internal-search="false"
@@ -429,7 +429,10 @@ const onPageChange = (event) => {
                             @search-change="searchClients"
                         >
                             <template v-slot:option="props">
-                                {{ fullName(props.option) }}
+                                <div>
+                                    {{ fullName(props.option) }}
+                                    <span v-if="props.option.phone" class="text-sm">{{ props.option.phone }}</span>
+                                </div>
                             </template>
                         </vue-multiselect>
                     </div>
