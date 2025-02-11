@@ -40,6 +40,9 @@ onMounted(() => {
     <Head title="WhatsApp"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>WhatsApp</h2>
+        </template>
         <iframe v-if="iframeUrl" :src="iframeUrl" allow="microphone *; clipboard-read *; clipboard-write *" class="w-full h-[90vh]"></iframe>
     </AuthenticatedLayout>
 </template>

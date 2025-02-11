@@ -172,7 +172,7 @@ const onPageChange = (event) => {
                     </div>
                     <div class="flex flex-col max-sm:col-span-2">
                         <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
-                        <InputMask id="phone" v-model="form.phone" mask="+7 (999) 999-99-99" placeholder="+7" class="mt-1 p-1 border border-gray-300 rounded-md" fluid />
+                        <InputMask id="phone" inputmode="numeric" :unmask="false" v-model="form.phone" mask="+7 (999) 999-99-99" placeholder="+7" class="mt-1 p-1 border border-gray-300 rounded-md" fluid />
                         <InputError :message="form.errors.phone" class="mt-2 text-sm text-red-600"/>
                     </div>
                     <div class="flex flex-col max-sm:col-span-2">

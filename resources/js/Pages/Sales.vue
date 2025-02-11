@@ -231,8 +231,15 @@ const openEditModal = (sale) => {
 
 // Обновляем данные о клиенте после того как с дочернего компонента пришел emit после обновления данных
 const handleClientUpdated = (updatedClient) => {
-    selectedClientCard.value = updatedClient;
-    form.client_object = updatedClient;
+    if (updatedClient === null) {
+        // Очищаем форму, если updatedClient равен null
+        selectedClientCard.value = null;
+        form.client_object = null;
+    } else {
+        // Обновляем данные, если клиент был изменен
+        selectedClientCard.value = updatedClient;
+        form.client_object = updatedClient;
+    }
 };
 
 const openModal = async (clientId) => {
