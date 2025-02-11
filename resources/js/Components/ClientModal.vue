@@ -7,6 +7,8 @@ import {useForm, usePage} from "@inertiajs/vue3";
 import InputError from "@/Components/InputError.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import {useToast} from "@/useToast";
+import InputMask from "primevue/inputmask";
+import Spinner from "@/Components/Spinner.vue";
 
 const {showToast} = useToast();
 
@@ -15,6 +17,8 @@ const props = defineProps({
     client: Object,
 });
 
+const isTasksLoading = ref(false);
+const isClientSalesLoading = ref(false);
 const iframeUrl = ref(null);
 const showIframe = ref(false);
 const wazzupUser = usePage().props.auth.wazzup_user;
@@ -54,6 +58,7 @@ watch(() => props.client, newClient => {
 const clientSales = ref([]);
 const totalSalesByClient = ref(0);
 const loadClientSales = async (clientId) => {
+    isClientSalesLoading.value = true;
     try {
         const response = await axios.get(route('sales.show', clientId));
         clientSales.value = response.data;
@@ -61,6 +66,7 @@ const loadClientSales = async (clientId) => {
     } catch (error) {
         showToast("Ошибка получения покупок клиента: " + error.message, "error");
     }
+    isClientSalesLoading.value = false;
 };
 
 const firstSaleDate = computed(() => {
@@ -112,10 +118,14 @@ const submitEdit = () => {
     }
 
     formEdit.put(route('clients.update', {id: props.client.id}), {
-        onSuccess: () => {
-            isEditing.value = false;
-            emit('client-updated', formEdit.data());
-            showToast("Данные успешно обновлены!", "success");
+        onSuccess: (response) => {
+            if (response.props.error === 'DUPLICATE_PHONE_NUMBER') {
+                showToast('Клиент или лид с таким номером телефона уже существует.', "error");
+            } else {
+                isEditing.value = false;
+                emit('client-updated', formEdit.data());
+                showToast("Данные успешно обновлены!", "success");
+            }
         },
         onError: (errors) => {
             Object.values(errors).forEach(error => {
@@ -148,17 +158,21 @@ const closeModal = () => {
     emit('close');
     isEditing.value = false;
     iframeUrl.value = null;
+    tasks.value = [];
+    clientSales.value = [];
 };
 
 // запрос на получение всех задач текущего клиента
 const tasks = ref([]);
 const fetchTasks = async (clientId) => {
+    isTasksLoading.value = true;
     try {
         const response = await axios.get(route('tasks.show', clientId));
         tasks.value = response.data;
     } catch (error) {
         showToast("Ошибка получения задач клиента: " + error.message, "error");
     }
+    isTasksLoading.value = false;
 };
 
 // Копирование данных о клиенте в буфер обмена
@@ -333,8 +347,7 @@ const fetchIframeUrl = async () => {
                                 </div>
                                 <div class="flex flex-col">
                                     <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
-                                    <input type="text" v-model="formEdit.phone"
-                                           class="p-1 border border-gray-300 rounded-md"/>
+                                    <InputMask id="phone" v-model="formEdit.phone" mask="+7 (999) 999-99-99" placeholder="+7" class="p-1 border border-gray-300 rounded-md" fluid />
                                     <InputError :message="formEdit.errors.phone" class="mt-2 text-sm text-red-600"/>
                                 </div>
                                 <div class="flex flex-col">
@@ -409,104 +422,114 @@ const fetchIframeUrl = async () => {
                         </div>
                         <secondary-button size="small" type="submit">Отправить задачу</secondary-button>
                     </form>
-                    <div v-if="tasks.length > 0" class="mt-2">
-                        <h4 class="text-md font-medium text-gray-700 mt-2">Все задачи на текущего клиента</h4>
-                        <div class="overflow-x-auto mt-1">
-                            <table class="w-full text-xs border-collapse border border-slate-600">
-                                <thead>
-                                <tr>
-                                    <th class="p-1 border border-slate-600 text-left w-16">Дата</th>
-                                    <th class="p-1 border border-slate-600 text-left w-16">Отправитель</th>
-                                    <th class="p-1 border border-slate-600 text-left">Описание</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr v-for="task in tasks" :key="task.id" class="border-b">
-                                    <td class="p-1 border border-slate-600 w-16">
-                                        {{ task.task_date ? dayjs(task.task_date).format('DD.MM.YY') : '' }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">
-                                        {{ task.user_sender.name }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">
-                                        {{ task.task_description }}
-                                    </td>
-                                </tr>
-                                </tbody>
-                            </table>
+                    <div v-if="isTasksLoading">
+                        <Spinner size="w-10 h-10" class="m-2"/>
+                    </div>
+                    <div v-else>
+                        <div v-if="tasks.length > 0" class="mt-2">
+                            <h4 class="text-md font-medium text-gray-700 mt-2">Все задачи на текущего клиента</h4>
+                            <div class="overflow-x-auto mt-1">
+                                <table class="w-full text-xs border-collapse border border-slate-600">
+                                    <thead>
+                                    <tr>
+                                        <th class="p-1 border border-slate-600 text-left w-16">Дата</th>
+                                        <th class="p-1 border border-slate-600 text-left w-16">Отправитель</th>
+                                        <th class="p-1 border border-slate-600 text-left">Описание</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="task in tasks" :key="task.id" class="border-b">
+                                        <td class="p-1 border border-slate-600 w-16">
+                                            {{ task.task_date ? dayjs(task.task_date).format('DD.MM.YY') : '' }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">
+                                            {{ task.user_sender.name }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">
+                                            {{ task.task_description }}
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="clientSales.length > 0" class="mt-2">
-                        <h4 class="text-md font-medium text-gray-700 mt-2">Все продажи на сумму:
-                            {{ Number(totalSalesByClient) }} &#8381;</h4>
-                        <div class="overflow-x-auto mt-1">
-                            <table class="w-full text-xs border-collapse border border-slate-600">
-                                <thead>
-                                <tr>
-                                    <th class="p-1 border border-slate-600 text-left">Дата</th>
-                                    <th class="p-1 border border-slate-600 text-left">Вид продажи</th>
-                                    <th class="p-1 border border-slate-600 text-left">Вид спорта</th>
-                                    <th class="p-1 border border-slate-600 text-left">Тип услуги</th>
-                                    <th class="p-1 border border-slate-600 text-left">Тип продукта</th>
-                                    <th class="p-1 border border-slate-600 text-left">Длит. абонем.</th>
-                                    <th class="p-1 border border-slate-600 text-left">Посещ. в нед.</th>
-                                    <th class="p-1 border border-slate-600 text-left">Кол-во тренировок</th>
-                                    <th class="p-1 border border-slate-600 text-left">Тренер</th>
-                                    <th class="p-1 border border-slate-600 text-left">Категория тренера</th>
-                                    <th class="p-1 border border-slate-600 text-left">Начало абонем.</th>
-                                    <th class="p-1 border border-slate-600 text-left">Конец абонем.</th>
-                                    <th class="p-1 border border-slate-600 text-left">Цена</th>
-                                    <th class="p-1 border border-slate-600 text-left">Оплачено</th>
-                                    <th class="p-1 border border-slate-600 text-left">Метод оплаты</th>
-                                    <th class="p-1 border border-slate-600 text-left">Комментарий</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr v-for="sale in clientSales" :key="sale.id" class="border-b">
-                                    <td class="p-1 border border-slate-600">
-                                        {{ sale.sale_date ? dayjs(sale.sale_date).format('DD.MM.YY') : '' }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">
-                                        <span v-if="sale.service_or_product === 'product'">Товар</span>
-                                        <span v-else-if="sale.service_or_product === 'service'">Услуга</span>
-                                    </td>
-                                    <td class="p-1 border border-slate-600">{{ sale.sport_type }}</td>
-                                    <td class="p-1 border border-slate-600">
-                                        <span v-if="sale.service_type === 'trial'">Пробная</span>
-                                        <span v-else-if="sale.service_type === 'group'">Групповая</span>
-                                        <span v-else-if="sale.service_type === 'minigroup'">Минигруппа</span>
-                                        <span v-else-if="sale.service_type === 'individual'">Индивидуальная</span>
-                                        <span v-else-if="sale.service_type === 'split'">Сплит</span>
-                                    </td>
-                                    <td class="p-1 border border-slate-600">{{ sale.product_type }}</td>
-                                    <td class="p-1 border border-slate-600">
-                                        {{
-                                            sale.subscription_duration === '0.03' ?
-                                                'Разовая' :
-                                                (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '')
-                                        }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">{{ sale.visits_per_week }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.training_count }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.trainer }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.trainer_category }}</td>
-                                    <td class="p-1 border border-slate-600">
-                                        {{
-                                            sale.subscription_start_date ? dayjs(sale.subscription_start_date).format('DD.MM.YY') : ''
-                                        }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">
-                                        {{
-                                            sale.subscription_end_date ? dayjs(sale.subscription_end_date).format('DD.MM.YY') : ''
-                                        }}
-                                    </td>
-                                    <td class="p-1 border border-slate-600">{{ sale.cost }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.paid_amount }}</td>
-                                    <td class="p-1 border border-slate-600">{{ sale.pay_method }}</td>
-                                    <td class="p-1 border border-slate-600 max-w-64 break-words">{{ sale.comment }}</td>
-                                </tr>
-                                </tbody>
-                            </table>
+                    <div v-if="isClientSalesLoading">
+                        <Spinner size="w-10 h-10" class="m-2"/>
+                    </div>
+                    <div v-else>
+                        <div v-if="clientSales.length > 0" class="mt-2">
+                            <h4 class="text-md font-medium text-gray-700 mt-2">Все продажи на сумму:
+                                {{ Number(totalSalesByClient) }} &#8381;</h4>
+                            <div class="overflow-x-auto mt-1">
+                                <table class="w-full text-xs border-collapse border border-slate-600">
+                                    <thead>
+                                    <tr>
+                                        <th class="p-1 border border-slate-600 text-left">Дата</th>
+                                        <th class="p-1 border border-slate-600 text-left">Вид продажи</th>
+                                        <th class="p-1 border border-slate-600 text-left">Вид спорта</th>
+                                        <th class="p-1 border border-slate-600 text-left">Тип услуги</th>
+                                        <th class="p-1 border border-slate-600 text-left">Тип продукта</th>
+                                        <th class="p-1 border border-slate-600 text-left">Длит. абонем.</th>
+                                        <th class="p-1 border border-slate-600 text-left">Посещ. в нед.</th>
+                                        <th class="p-1 border border-slate-600 text-left">Кол-во тренировок</th>
+                                        <th class="p-1 border border-slate-600 text-left">Тренер</th>
+                                        <th class="p-1 border border-slate-600 text-left">Категория тренера</th>
+                                        <th class="p-1 border border-slate-600 text-left">Начало абонем.</th>
+                                        <th class="p-1 border border-slate-600 text-left">Конец абонем.</th>
+                                        <th class="p-1 border border-slate-600 text-left">Цена</th>
+                                        <th class="p-1 border border-slate-600 text-left">Оплачено</th>
+                                        <th class="p-1 border border-slate-600 text-left">Метод оплаты</th>
+                                        <th class="p-1 border border-slate-600 text-left">Комментарий</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr v-for="sale in clientSales" :key="sale.id" class="border-b">
+                                        <td class="p-1 border border-slate-600">
+                                            {{ sale.sale_date ? dayjs(sale.sale_date).format('DD.MM.YY') : '' }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">
+                                            <span v-if="sale.service_or_product === 'product'">Товар</span>
+                                            <span v-else-if="sale.service_or_product === 'service'">Услуга</span>
+                                        </td>
+                                        <td class="p-1 border border-slate-600">{{ sale.sport_type }}</td>
+                                        <td class="p-1 border border-slate-600">
+                                            <span v-if="sale.service_type === 'trial'">Пробная</span>
+                                            <span v-else-if="sale.service_type === 'group'">Групповая</span>
+                                            <span v-else-if="sale.service_type === 'minigroup'">Минигруппа</span>
+                                            <span v-else-if="sale.service_type === 'individual'">Индивидуальная</span>
+                                            <span v-else-if="sale.service_type === 'split'">Сплит</span>
+                                        </td>
+                                        <td class="p-1 border border-slate-600">{{ sale.product_type }}</td>
+                                        <td class="p-1 border border-slate-600">
+                                            {{
+                                                sale.subscription_duration === '0.03' ?
+                                                    'Разовая' :
+                                                    (sale.subscription_duration ? Number(sale.subscription_duration).toFixed(0) : '')
+                                            }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">{{ sale.visits_per_week }}</td>
+                                        <td class="p-1 border border-slate-600">{{ sale.training_count }}</td>
+                                        <td class="p-1 border border-slate-600">{{ sale.trainer }}</td>
+                                        <td class="p-1 border border-slate-600">{{ sale.trainer_category }}</td>
+                                        <td class="p-1 border border-slate-600">
+                                            {{
+                                                sale.subscription_start_date ? dayjs(sale.subscription_start_date).format('DD.MM.YY') : ''
+                                            }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">
+                                            {{
+                                                sale.subscription_end_date ? dayjs(sale.subscription_end_date).format('DD.MM.YY') : ''
+                                            }}
+                                        </td>
+                                        <td class="p-1 border border-slate-600">{{ sale.cost }}</td>
+                                        <td class="p-1 border border-slate-600">{{ sale.paid_amount }}</td>
+                                        <td class="p-1 border border-slate-600">{{ sale.pay_method }}</td>
+                                        <td class="p-1 border border-slate-600 max-w-64 break-words">{{ sale.comment }}</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -33,7 +33,17 @@ class AnalyticsController extends Controller
                         DATE_FORMAT(s.sale_date, '%Y-%m') AS month,
                         YEAR(s.sale_date) AS year,
                         MONTH(s.sale_date) AS month_num,
-                        COUNT(DISTINCT CASE WHEN s.service_type = 'trial' THEN s.client_id END) AS trials,
+                        COUNT(DISTINCT CASE
+                            WHEN s.service_type = 'trial'
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM sales s2
+                                WHERE s2.client_id = s.client_id
+                                  AND s2.service_type != 'trial'
+                                  AND s2.service_or_product = 'service'
+                            )
+                            THEN s.client_id
+                        END) AS trials,
                         COUNT(DISTINCT CASE
                             WHEN s.service_type = 'trial'
                                  OR fp.first_purchase_date = s.sale_date
@@ -181,7 +191,17 @@ class AnalyticsController extends Controller
                     SELECT
                         YEAR(s.sale_date) AS year,
                         QUARTER(s.sale_date) AS quarter,
-                        COUNT(DISTINCT CASE WHEN s.service_type = 'trial' THEN s.client_id END) AS trials,
+                        COUNT(DISTINCT CASE
+                            WHEN s.service_type = 'trial'
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM sales s2
+                                WHERE s2.client_id = s.client_id
+                                  AND s2.service_type != 'trial'
+                                  AND s2.service_or_product = 'service'
+                            )
+                            THEN s.client_id
+                        END) AS trials,
                         COUNT(DISTINCT CASE
                             WHEN s.service_type = 'trial'
                                  OR fp.first_purchase_date = s.sale_date
@@ -324,7 +344,17 @@ class AnalyticsController extends Controller
                 SalesYearly AS (
                     SELECT
                         YEAR(s.sale_date) AS year,
-                        COUNT(DISTINCT CASE WHEN s.service_type = 'trial' THEN s.client_id END) AS trials,
+                        COUNT(DISTINCT CASE
+                            WHEN s.service_type = 'trial'
+                            AND NOT EXISTS (
+                                SELECT 1
+                                FROM sales s2
+                                WHERE s2.client_id = s.client_id
+                                  AND s2.service_type != 'trial'
+                                  AND s2.service_or_product = 'service'
+                            )
+                            THEN s.client_id
+                        END) AS trials,
                         COUNT(DISTINCT CASE
                             WHEN s.service_type = 'trial'
                                  OR fp.first_purchase_date = s.sale_date

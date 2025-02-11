@@ -230,6 +230,12 @@ class FilterController extends Controller
             }
         }
 
+        if ($request->filled('client_phone')) {
+            $query->whereHas('client', function ($q) use ($request) {
+                $q->where('phone', 'like', '%' . $request->client_phone . '%');
+            });
+        }
+
         if ($request->filled('sport_type')) {
             $query->where('sport_type', 'like', '%' . $request->sport_type . '%');
         }

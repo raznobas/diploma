@@ -6,11 +6,11 @@ const gym = usePage().props.auth.gym;
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Главная" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Панель управления</h2>
+            <h2>Главная</h2>
         </template>
 
         <div class="py-12">

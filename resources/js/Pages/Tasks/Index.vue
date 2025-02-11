@@ -99,10 +99,13 @@ const onPageChange = (event) => {
     <Head title="Задачи"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Задачи</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <div>
                 <h3 class="mb-4 text-lg font-medium text-gray-900">Список всех задач по всем клиентам/лидам</h3>
-                <div class="max-lg:overflow-x-auto">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
@@ -150,13 +153,13 @@ const onPageChange = (event) => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination
-                        :rows="tasks.per_page"
-                        :totalRecords="tasks.total"
-                        :first="(tasks.current_page - 1) * tasks.per_page"
-                        @page="onPageChange"
-                    />
                 </div>
+                <Pagination
+                    :rows="tasks.per_page"
+                    :totalRecords="tasks.total"
+                    :first="(tasks.current_page - 1) * tasks.per_page"
+                    @page="onPageChange"
+                />
             </div>
             <Modal :show="showTaskEdit" @close="showTaskEdit = false">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">

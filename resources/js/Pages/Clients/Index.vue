@@ -10,6 +10,7 @@ import ClientModal from "@/Components/ClientModal.vue";
 import dayjs from "dayjs";
 import { useToast } from "@/useToast";
 import Filters from "@/Components/Filters.vue";
+import InputMask from 'primevue/inputmask';
 const { showToast } = useToast();
 
 const form = useForm({
@@ -33,9 +34,14 @@ const props = defineProps(['clients', 'source_options', 'filter']);
 
 const submit = () => {
     form.post(route('clients.store'), {
-        onSuccess: () => {
+        onSuccess: (response) => {
             form.reset();
-            showToast("Клиент успешно добавлен!", "success");
+
+            if (response.props.error === 'DUPLICATE_PHONE_NUMBER') {
+                showToast('Клиент или лид с таким номером телефона уже существует.', "error");
+            } else {
+                showToast("Клиент успешно добавлен!", "success");
+            }
         },
         onError: (errors) => {
             Object.values(errors).forEach(error => {
@@ -133,6 +139,9 @@ const onPageChange = (event) => {
     <Head title="Клиенты"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Клиенты</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <form @submit.prevent="submit">
                 <div class="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 items-end">
@@ -163,7 +172,7 @@ const onPageChange = (event) => {
                     </div>
                     <div class="flex flex-col max-sm:col-span-2">
                         <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
-                        <input id="phone" type="text" v-model="form.phone" class="mt-1 p-1 border border-gray-300 rounded-md"/>
+                        <InputMask id="phone" v-model="form.phone" mask="+7 (999) 999-99-99" placeholder="+7" class="mt-1 p-1 border border-gray-300 rounded-md" fluid />
                         <InputError :message="form.errors.phone" class="mt-2 text-sm text-red-600"/>
                     </div>
                     <div class="flex flex-col max-sm:col-span-2">
@@ -216,7 +225,7 @@ const onPageChange = (event) => {
                 @update:filterForm="updateFilterForm"
                 @resetFilters="resetFilters"
             />
-            <div class="max-lg:overflow-x-auto">
+            <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
@@ -245,13 +254,13 @@ const onPageChange = (event) => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination
-                    :rows="clients.per_page"
-                    :totalRecords="clients.total"
-                    :first="(clients.current_page - 1) * clients.per_page"
-                    @page="onPageChange"
-                />
             </div>
+            <Pagination
+                :rows="clients.per_page"
+                :totalRecords="clients.total"
+                :first="(clients.current_page - 1) * clients.per_page"
+                @page="onPageChange"
+            />
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated" />
         </div>

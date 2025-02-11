@@ -66,6 +66,9 @@ const onPageChange = (event) => {
     <Head title="Продление"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Продление</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <h3 class="mb-4 text-lg font-medium text-gray-900">Список клиентов с абонементом истекающим и истекшим в
                 течении
@@ -80,7 +83,7 @@ const onPageChange = (event) => {
                     </select>
                 </div>
             </div>
-            <div class="max-lg:overflow-x-auto">
+            <div class="overflow-x-auto">
                 <table v-if="clientsToRenewal && clientsToRenewal.data" class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
@@ -143,13 +146,13 @@ const onPageChange = (event) => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination
-                    :rows="clientsToRenewal.per_page"
-                    :totalRecords="clientsToRenewal.total"
-                    :first="(clientsToRenewal.current_page - 1) * clientsToRenewal.per_page"
-                    @page="onPageChange"
-                />
             </div>
+            <Pagination
+                :rows="clientsToRenewal.per_page"
+                :totalRecords="clientsToRenewal.total"
+                :first="(clientsToRenewal.current_page - 1) * clientsToRenewal.per_page"
+                @page="onPageChange"
+            />
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated"/>
         </div>

@@ -75,6 +75,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/export', [ExportController::class, 'export'])->name('export');
 
     Route::patch('/leads/{lead}/toggle-check', [LeadController::class, 'toggleCheck']);
+    Route::patch('/calls/{call}/toggle-irrelevant', [CallController::class, 'toggleIrrelevant']);
 });
 
 Route::resource('leads', LeadController::class)

@@ -12,6 +12,7 @@ import ClientLeadForm from "@/Components/ClientLeadForm.vue";
 import Modal from "@/Components/Modal.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import Spinner from "@/Components/Spinner.vue";
+import Tooltip from "@/Components/Tooltip.vue";
 const {showToast} = useToast();
 
 const props = defineProps(['calls']);
@@ -44,6 +45,12 @@ const closeModal = () => {
 
 const createLead = (formData, callId) => {
     formData.is_lead = true;
+
+    // Проверяем, установил ли менеджер значение ad_source в форме, и если нет, то записываем туда "ЗВОНОК"
+    if (!formData.ad_source) {
+        formData.ad_source = 'ЗВОНОК';
+    }
+
     callId = leadsCall.value.id;
 
     // Передаем callId в маршрут
@@ -113,11 +120,33 @@ const onPageChange = (event) => {
         preserveScroll: true,
     });
 };
+
+// галочка нецеловой звонок
+const toggleIrrelevant = async (callId) => {
+    try {
+        // Находим звонок в списке
+        const call = props.calls.data.find((call) => call.id === callId);
+        if (!call) return;
+
+        // Инвертируем значение is_irrelevant
+        call.is_irrelevant = !call.is_irrelevant;
+
+        await axios.patch(`/calls/${callId}/toggle-irrelevant`, {
+            is_irrelevant: call.is_irrelevant,
+        });
+    } catch (error) {
+        console.error('Ошибка при обновлении состояния:', error);
+        showToast("Ошибка при изменении состояния: " + error.message, "error");
+    }
+};
 </script>
 
 <template>
     <Head title="Звонки"/>
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Звонки</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <div>
                 <h3 class="mb-4 text-lg font-medium text-gray-900">Список звонков</h3>
@@ -136,12 +165,12 @@ const onPageChange = (event) => {
                     :disabled="isLoading"
                 >
                     <span v-if="isLoading" class="inline-flex items-center">
-                      <Spinner/>
+                      <Spinner class="me-2"/>
                       Обновление...
                     </span>
                     <span v-else>Обновить</span>
                 </PrimaryButton>
-                <div class="max-lg:overflow-x-auto">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
@@ -161,6 +190,12 @@ const onPageChange = (event) => {
                                 Статус
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <div class="flex items-center whitespace-nowrap">
+                                    Нецелевой
+                                    <Tooltip class="ms-1" content="Отметьте для спама или нецелевых звонков."/>
+                                </div>
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Действия
                             </th>
                         </tr>
@@ -175,6 +210,14 @@ const onPageChange = (event) => {
                             <td class="px-3 py-2 whitespace-nowrap">{{ formatDuration(call.duration) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ getStatusText(call.status) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
+                                <input
+                                    type="checkbox"
+                                    :checked="call.is_irrelevant"
+                                    @change="toggleIrrelevant(call.id)"
+                                    class="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out"
+                                />
+                            </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
                                 <button v-if="call.client_id" @click="openModal(call.client_id)"
                                         class="text-indigo-600 hover:text-indigo-900">
                                     Карточка
@@ -187,13 +230,13 @@ const onPageChange = (event) => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination
-                        :rows="calls.per_page"
-                        :totalRecords="calls.total"
-                        :first="(calls.current_page - 1) * calls.per_page"
-                        @page="onPageChange"
-                    />
                 </div>
+                <Pagination
+                    :rows="calls.per_page"
+                    :totalRecords="calls.total"
+                    :first="(calls.current_page - 1) * calls.per_page"
+                    @page="onPageChange"
+                />
             </div>
         </div>
     </AuthenticatedLayout>

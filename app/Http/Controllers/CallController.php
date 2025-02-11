@@ -184,6 +184,16 @@ class CallController extends Controller
         });
     }
 
+    public function toggleIrrelevant(Call $call)
+    {
+        $call->is_irrelevant = !$call->is_irrelevant;
+        $call->save();
+
+        return response()->json([
+            'is_irrelevant' => $call->is_irrelevant,
+        ]);
+    }
+
     function swapSevenAndEight($phone)
     {
         if (strlen($phone) === 11) {

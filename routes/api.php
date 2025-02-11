@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/lead/store', [LeadController::class, 'api_store'])
+Route::post('/lead/store', [LeadController::class, 'storeApi'])
     ->middleware('auth:sanctum');
 
 // Маршруты для mango api

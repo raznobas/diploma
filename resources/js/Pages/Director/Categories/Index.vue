@@ -196,6 +196,9 @@ const fillCostForm = (cost) => {
     <Head title="Настройка категорий"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Настройка категорий</h2>
+        </template>
         <div class="max-w-3xl mx-auto my-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Modal :max-width="'lg'" :show="editModal" @close="cancelEdit">

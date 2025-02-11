@@ -51,12 +51,12 @@ class SaleController extends Controller
             ->where('director_id', auth()->user()->director_id)
             ->get();
 
-        $person = session('person');
         return Inertia::render('Sales', [
             'categories' => $categories,
             'categoryCosts' => $categoryCosts,
             'sales' => $sales,
-            'person' => $person,
+            'person' => session('person'),
+            'error' => session('error'),
             'filter' => $request->all(),
         ]);
     }

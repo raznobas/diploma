@@ -260,12 +260,16 @@ const updateSale = (updatedForm) => {
 const createClient = (formData) => {
     formData.is_lead = false;
     formData.post(route('clients.store'), {
-        onSuccess: () => {
+        onSuccess: (response) => {
             formData.reset();
             if (props.person) {
                 form.client_object = props.person;
             }
-            showToast("Клиент успешно добавлен!", "success");
+            if (response.props.error === 'DUPLICATE_PHONE_NUMBER') {
+                showToast('Клиент или лид с таким номером телефона уже существует.', "error");
+            } else {
+                showToast("Клиент успешно добавлен!", "success");
+            }
         },
         onError: (errors) => {
             Object.values(errors).forEach(error => {
@@ -391,9 +395,10 @@ const onPageChange = (event) => {
     <Head title="Продажи"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Продажи</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
-            <h3 class="mb-4">Для работы с продажами директору нужно настроить категории во вкладке "Настройка
-                категорий".</h3>
             <PrimaryButton type="button" @click="showLeadModal = true;">+ Новый клиент</PrimaryButton>
             <Modal :show="showLeadModal" @close="closeModal">
                 <ClientLeadForm :is-lead="false" @submit="createClient"/>

@@ -3,6 +3,8 @@ import InputError from "@/Components/InputError.vue";
 import {useForm, usePage} from "@inertiajs/vue3";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import {onMounted, ref} from "vue";
+import InputMask from "primevue/inputmask";
+import SecondaryButton from "@/Components/SecondaryButton.vue";
 
 const emit = defineEmits(['submit']);
 const props = defineProps({
@@ -78,7 +80,7 @@ onMounted(() => {
                 </div>
                 <div class="flex flex-col">
                     <label for="phone" class="text-sm font-medium text-gray-700">Телефон</label>
-                    <input type="text" v-model="form.phone" class="p-1 border border-gray-300 rounded-md"/>
+                    <InputMask id="phone" v-model="form.phone" mask="+7 (999) 999-99-99" placeholder="+7" class="p-1 border border-gray-300 rounded-md" fluid />
                     <InputError :message="form.errors.phone" class="mt-2 text-sm text-red-600"/>
                 </div>
                 <div class="flex flex-col">
@@ -119,9 +121,10 @@ onMounted(() => {
                     <InputError :message="form.errors.ad_source" class="mt-2 text-sm text-red-600"/>
                 </div>
             </div>
-            <div class="mt-6">
+            <div class="mt-4 flex">
                 <PrimaryButton v-if="props.isLead" type="submit">Создать лид</PrimaryButton>
                 <PrimaryButton v-else type="submit">Создать клиента</PrimaryButton>
+                <SecondaryButton class="ml-2" type="button" @click="form.reset()">Очистить</SecondaryButton>
             </div>
         </form>
     </div>

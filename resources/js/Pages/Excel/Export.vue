@@ -123,7 +123,7 @@ const exportData = async () => {
     <Head title="Экспорт в Excel"/>
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Экспорт в Excel</h2>
+            <h2>Экспорт в Excel</h2>
         </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8">
             <div>
@@ -196,7 +196,7 @@ const exportData = async () => {
                         :disabled="isLoading"
                     >
                       <span v-if="isLoading" class="inline-flex items-center">
-                        <Spinner/>
+                        <Spinner class="me-2"/>
                         Экспорт...
                       </span>
                         <span v-else>

@@ -55,12 +55,20 @@ class ClientController extends Controller
             'clients' => $clients,
             'source_options' => $source_options,
             'filter' => $request->all(),
+            'error' => session('error'),
         ]);
     }
 
     public function store(Request $request, $callId = null)
     {
         $this->authorize('manage-sales');
+
+        // Очищаем номер телефона от лишних символов
+        if ($request->has('phone')) {
+            $request->merge(['phone' => preg_replace('/[^0-9]/', '', $request->phone)]);
+        }
+
+        // Валидация данных
         $validated = $request->validate([
             'surname' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
@@ -78,7 +86,20 @@ class ClientController extends Controller
             'director_id' => 'required|exists:users,id',
         ]);
 
-        // Создаем клиента и получаем его ID
+        // Проверяем, существует ли клиент с таким номером телефона
+        if ($request->has('phone') && $request->phone) {
+            $existingClient = Client::where('phone', $validated['phone'])->first();
+
+            if ($existingClient) {
+                return redirect()->back()
+                    ->with([
+                        'person' => $existingClient,
+                        'error' => 'DUPLICATE_PHONE_NUMBER',
+                    ]);
+            }
+        }
+
+        // Создаем нового клиента
         $client = Client::create($validated);
 
         // Определяем статус в зависимости от значения is_lead
@@ -115,6 +136,11 @@ class ClientController extends Controller
     public function update(Request $request, $id)
     {
         $this->authorize('manage-sales');
+
+        if ($request->has('phone')) {
+            $request->merge(['phone' => preg_replace('/[^0-9]/', '', $request->phone)]);
+        }
+
         $validatedData = $request->validate([
             'surname' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
@@ -131,7 +157,19 @@ class ClientController extends Controller
         ]);
 
         $client = Client::findOrFail($id);
+
+        // Проверяем, изменился ли номер телефона
+        if ($request->has('phone') && $request->phone && $client->phone !== $validatedData['phone']) {
+            $existingClient = Client::where('phone', $validatedData['phone'])->first();
+
+            if ($existingClient) {
+                return redirect()->back()->with(['error' => 'DUPLICATE_PHONE_NUMBER']);
+            }
+        }
+
         $client->update($validatedData);
+
+        return redirect()->back();
     }
 
     public function destroy(Request $request, $id)
@@ -178,7 +216,7 @@ class ClientController extends Controller
 
                 // Добавляем поиск по всем вариантам номера телефона
                 foreach ($phoneVariants as $variant) {
-                    $q->orWhere('phone', 'like', "$variant%");
+                    $q->orWhere('phone', 'like', "%$variant%");
                 }
             })
             ->get();
@@ -305,6 +343,11 @@ class ClientController extends Controller
             ->whereDoesntHave('sales', function ($query) use ($currentDate, $directorId) {
                 $query->where('subscription_end_date', '>', $currentDate)
                     ->where('director_id', $directorId);
+            })
+            ->whereDoesntHave('sales', function ($query) use ($oneMonthAgo, $directorId) {
+                $query->where('service_type', '!=', 'trial') // Исключаем продажи, которые не являются пробными
+                ->where('service_or_product', 'service')
+                ->where('director_id', $directorId);
             })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
             ->with(['sales' => function ($query) use ($oneMonthAgo, $directorId) {

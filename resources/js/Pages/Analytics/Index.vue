@@ -44,7 +44,7 @@ const formatPeriod = (item) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Аналитика</h2>
+            <h2>Аналитика</h2>
         </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs text-sm">
             <div v-for="group in groupedAnalytics" :key="group.level" class="mb-8">
@@ -69,7 +69,7 @@ const formatPeriod = (item) => {
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 <div class="flex items-center whitespace-nowrap">
                                     Пробники
-                                    <Tooltip class="ms-1" content="Пробники – это люди, которые прошли пробную тренировку."/>
+                                    <Tooltip class="ms-1" content="Пробники – это люди, которые прошли пробную тренировку, но не совершили какую-либо покупку услуг."/>
                                 </div>
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

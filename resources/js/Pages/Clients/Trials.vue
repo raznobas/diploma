@@ -44,9 +44,12 @@ const onPageChange = (event) => {
     <Head title="Пробники"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Пробники</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <h3 class="mb-4 text-lg font-medium text-gray-900">Список клиентов, не оформивших абонемент, спустя более 1-го месяца после пробной тренировки</h3>
-            <div class="max-lg:overflow-x-auto">
+            <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
@@ -77,13 +80,13 @@ const onPageChange = (event) => {
                     </tr>
                     </tbody>
                 </table>
-                <Pagination
-                    :rows="trialClients.per_page"
-                    :totalRecords="trialClients.total"
-                    :first="(trialClients.current_page - 1) * trialClients.per_page"
-                    @page="onPageChange"
-                />
             </div>
+            <Pagination
+                :rows="trialClients.per_page"
+                :totalRecords="trialClients.total"
+                :first="(trialClients.current_page - 1) * trialClients.per_page"
+                @page="onPageChange"
+            />
             <ClientModal :show="showModal" :client="selectedClient"
                          @close="closeModal" @client-updated="handleClientUpdated" />
         </div>

@@ -62,13 +62,12 @@ class LeadController extends Controller
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
 
-        $person = session('person');
-
         return Inertia::render('Leads/Index', [
             'categories' => $categories,
             'leads' => $leads,
             'leadAppointments' => $leadAppointments,
-            'person' => $person,
+            'person' => session('person'),
+            'error' => session('error'),
             'filter' => $request->all()
         ]);
     }
@@ -164,19 +163,35 @@ class LeadController extends Controller
         return redirect()->back()->with('success', "Запись успешно удалена");
     }
 
-    public function api_store(Request $request)
+    public function storeApi(Request $request)
     {
         // Валидация входных данных
         $validated = $request->validate([
             'gym_name' => 'string|max:255',
             'client_name' => 'required|string|max:255',
-            'client_phone' => 'required|string|max:20',
+            'client_phone' => [
+                'required',
+                'string',
+                'regex:/^\+?[78]?[0-9]{10}$/', // Разрешаем номера форматов 79123456789, 89123456789, +79123456789, +89123456789
+            ],
         ]);
 
         // Получаем данные из запроса
         $gymName = $validated['gym_name'];
         $clientName = $validated['client_name'];
         $clientPhone = $validated['client_phone'];
+
+        // Очищаем номер телефона от лишних символов и приводим к формату 79123456789
+        $clientPhone = preg_replace('/[^0-9]/', '', $clientPhone); // Убираем все символы, кроме цифр
+
+        // Приводим номер к формату 79123456789
+        if (strlen($clientPhone) === 10 && $clientPhone[0] === '9') {
+            $clientPhone = '7' . $clientPhone; // Добавляем 7 в начало номера
+        } elseif (strlen($clientPhone) === 11 && $clientPhone[0] === '8') {
+            $clientPhone = '7' . substr($clientPhone, 1); // Заменяем 8 на 7 в начале номера
+        } elseif (strlen($clientPhone) === 11 && $clientPhone[0] !== '7') {
+            return response()->json(['error' => 'Некорректный формат номера телефона'], 400);
+        }
 
         // Ищем зал по названию с использованием модели Gym
         $gym = Gym::where('name', $gymName)->first();

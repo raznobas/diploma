@@ -166,6 +166,11 @@ class TaskController extends Controller
                 $query->where('subscription_end_date', '>', $currentDate)
                     ->where('director_id', $directorId);
             })
+            ->whereDoesntHave('sales', function ($query) use ($oneMonthAgo, $directorId) {
+                $query->where('service_type', '!=', 'trial') // Исключаем продажи, которые не являются пробными
+                ->where('service_or_product', 'service')
+                    ->where('director_id', $directorId);
+            })
             ->select('id', 'surname', 'name', 'birthdate', 'phone', 'email')
             ->with(['sales' => function ($query) use ($oneMonthAgo, $directorId) {
                 $query->where('sale_date', '>=', $oneMonthAgo)
@@ -226,7 +231,7 @@ class TaskController extends Controller
         $sales = $salesQuery->get()
             ->groupBy('client.id')
             ->map(function ($sales) {
-                return $sales->first();
+                return $sales->sortByDesc('subscription_end_date')->first();
             })
             ->values();
 
@@ -241,7 +246,7 @@ class TaskController extends Controller
             // Проверяем, есть ли у клиента хотя бы один действующий абонемент только для фильтра 'expired'
             if ($filter === 'expired') {
                 $hasActiveSubscription = Sale::where('client_id', $sale->client->id)
-                    ->where('subscription_end_date', '>', $currentDate)
+                    ->where('subscription_end_date', '>=', $currentDate)
                     ->exists();
                 if ($hasActiveSubscription) {
                     return false;

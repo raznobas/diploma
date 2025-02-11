@@ -101,12 +101,16 @@ const closeModal = () => {
 const createLead = (formData) => {
     formData.is_lead = true;
     formData.post(route('clients.store'), {
-        onSuccess: () => {
+        onSuccess: (response) => {
             form.reset();
             if (props.person) {
                 form.client_object = props.person;
             }
-            showToast("Лид успешно добавлен!", "success");
+            if (response.props.error === 'DUPLICATE_PHONE_NUMBER') {
+                showToast('Клиент или лид с таким номером телефона уже существует.', "error");
+            } else {
+                showToast("Лид успешно добавлен!", "success");
+            }
         },
         onError: (errors) => {
             Object.values(errors).forEach(error => {
@@ -190,6 +194,7 @@ const fields = [
 
 const fieldsAppointments = [
     { name: 'client_name_book', label: 'Имя/Фамилия', type: 'text' },
+    { name: 'client_phone', label: 'Телефон', type: 'text' },
     { name: 'sport_type', label: 'Вид спорта', type: 'text' },
     { name: 'service_type', label: 'Вид услуги', type: 'select', options: [
             { value: '', label: 'Все' },
@@ -325,6 +330,7 @@ const toggleCheck = async (leadId) => {
         });
     } catch (error) {
         console.error('Ошибка при обновлении состояния:', error);
+        showToast("Ошибка при изменении состояния: " + error.message, "error");
     }
 };
 
@@ -365,6 +371,9 @@ const copyClientInfo = (client) => {
     <Head title="Лиды"/>
 
     <AuthenticatedLayout>
+        <template #header>
+            <h2>Лиды</h2>
+        </template>
         <div class="mx-auto p-4 sm:p-6 lg:p-8 max-sm:text-xs">
             <PrimaryButton type="button" @click="showLeadModal = true;">+ Новый лид</PrimaryButton>
             <Modal :show="showLeadModal" @close="closeModal">
@@ -484,11 +493,13 @@ const copyClientInfo = (client) => {
                     @update:filterForm="updateFilterFormAppointments"
                     @resetFilters="resetFiltersAppointments"
                 />
-                <div class="max-lg:overflow-x-auto">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя
+                            </th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон
                             </th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Вид
                                 спорта
@@ -512,6 +523,9 @@ const copyClientInfo = (client) => {
                             <td class="px-3 py-2 whitespace-nowrap">
                                 {{ appointment.client?.surname }} {{ appointment.client?.name }}
                             </td>
+                            <td class="px-3 py-2 whitespace-nowrap">
+                                {{ appointment.client?.phone }}
+                            </td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ appointment.sport_type }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">
                                 <span v-if="appointment.service_type === 'group'">Групповая</span>
@@ -531,25 +545,25 @@ const copyClientInfo = (client) => {
                                         class="text-indigo-600 hover:text-indigo-900">Карточка
                                 </button>
                                 <span class="ms-4">
-                                <button title="Редактировать" type="button" @click="editAppointment(appointment)" class="px-1">
-                                    <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
-                                </button>
-                                <button @click="deleteAppointment(appointment.id)" class="px-1 ms-1"
-                                        title="Удалить запись">
-                                    <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
-                                </button>
-                            </span>
+                                    <button title="Редактировать" type="button" @click="editAppointment(appointment)" class="px-1">
+                                        <i class="fa fa-pencil text-blue-600" aria-hidden="true"></i>
+                                    </button>
+                                    <button @click="deleteAppointment(appointment.id)" class="px-1 ms-1"
+                                            title="Удалить запись">
+                                        <i class="fa fa-trash text-red-600" aria-hidden="true"></i>
+                                    </button>
+                                </span>
                             </td>
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination
-                        :rows="leadAppointments.per_page"
-                        :totalRecords="leadAppointments.total"
-                        :first="(leadAppointments.current_page - 1) * leadAppointments.per_page"
-                        @page="onPageChange2"
-                    />
                 </div>
+                <Pagination
+                    :rows="leadAppointments.per_page"
+                    :totalRecords="leadAppointments.total"
+                    :first="(leadAppointments.current_page - 1) * leadAppointments.per_page"
+                    @page="onPageChange2"
+                />
             </div>
             <div>
                 <h3 class="mt-8 mb-4 text-lg font-medium text-gray-900">Список лидов вашей организации</h3>
@@ -559,7 +573,7 @@ const copyClientInfo = (client) => {
                     @update:filterForm="updateFilterForm"
                     @resetFilters="resetFilters"
                 />
-                <div class="max-lg:overflow-x-auto">
+                <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                         <tr>
@@ -623,13 +637,13 @@ const copyClientInfo = (client) => {
                         </tr>
                         </tbody>
                     </table>
-                    <Pagination
-                        :rows="leads.per_page"
-                        :totalRecords="leads.total"
-                        :first="(leads.current_page - 1) * leads.per_page"
-                        @page="onPageChange1"
-                    />
                 </div>
+                <Pagination
+                    :rows="leads.per_page"
+                    :totalRecords="leads.total"
+                    :first="(leads.current_page - 1) * leads.per_page"
+                    @page="onPageChange1"
+                />
             </div>
         </div>
     </AuthenticatedLayout>
