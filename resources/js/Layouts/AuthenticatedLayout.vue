@@ -3,6 +3,7 @@ import {ref, onMounted} from 'vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import {usePage} from '@inertiajs/vue3';
 import Tooltip from "@/Components/Tooltip.vue";
+import { initFlowbite } from 'flowbite'
 
 const showingNavigationDropdown = ref(false);
 const abilities = ref([]);
@@ -10,6 +11,7 @@ const wazzupUser = usePage().props.auth.wazzup_user;
 
 onMounted(() => {
     abilities.value = usePage().props.auth.abilities || [];
+    initFlowbite();
 });
 
 const hasAbility = (ability) => {
