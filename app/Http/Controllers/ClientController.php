@@ -39,7 +39,7 @@ class ClientController extends Controller
         $query = Client::where('director_id', auth()->user()->director_id)
             ->where('is_lead', false)
             ->orderBy('created_at', 'desc')
-            ->select('id', 'surname', 'name', 'patronymic', 'birthdate', 'phone', 'email');
+            ->select('id', 'surname', 'name', 'patronymic', 'birthdate', 'phone', 'email', 'workplace');
 
         // Применяем фильтры через FilterController
         $filterController->applyFilters($query, $request, $routeName);

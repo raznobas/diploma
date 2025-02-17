@@ -235,6 +235,7 @@ const onPageChange = (event) => {
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата рождения</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Телефон</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Почта</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Место работы</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                     </tr>
                     </thead>
@@ -248,6 +249,7 @@ const onPageChange = (event) => {
                         </td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ client.phone }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ client.email }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ client.workplace }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">
                             <button @click="openModal(client.id)" class="text-indigo-600 hover:text-indigo-900">Карточка</button>
                         </td>
