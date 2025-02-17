@@ -114,11 +114,11 @@ class ImportClientsFromXlsx extends Command
                         [
                             'surname' => $row[0],
                             'name' => $row[1],
+                            'phone' => $clientPhone,
                             'director_id' => $directorId, // Используем значение из таблицы
                         ],
                         [
                             'patronymic' => $row[2] ?? null,
-                            'phone' => $clientPhone,
                             'is_lead' => false,
                             'address' => $row[5] ?? null,
                             'workplace' => $row[6] ?? null,
