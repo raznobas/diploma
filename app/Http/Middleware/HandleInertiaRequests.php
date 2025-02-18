@@ -39,7 +39,7 @@ class HandleInertiaRequests extends Middleware
 
         $wazzup_user = null;
         if ($user) {
-            $wazzup_user = \App\Models\WazzupUsers::where('director_id', $user->director_id)->first();
+            $wazzup_user = \App\Models\WazzupUser::where('director_id', $user->director_id)->first();
         }
 
         return [

@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryCostController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\MassMailingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\TaskController;
@@ -89,6 +90,10 @@ Route::resource('tasks', TaskController::class)
 Route::resource('calls', CallController::class)
     ->only(['index', 'store', 'update', 'destroy', 'show'])
     ->middleware(['auth', 'verified', 'can:manage-leads']);
+
+Route::resource('mass-mailing',MassMailingController::class)
+    ->only(['index', 'store', 'update', 'destroy', 'show'])
+    ->middleware(['auth', 'verified']);
 
 
 require __DIR__ . '/auth.php';

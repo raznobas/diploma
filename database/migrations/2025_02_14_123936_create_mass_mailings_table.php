@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wazzup_users', function (Blueprint $table) {
+        Schema::create('mass_mailings', function (Blueprint $table) {
             $table->id();
-            $table->string('wazzup_id');
-            $table->string('name');
-            $table->string('phone')->nullable();
-            $table->uuid('channel_id'); // ID канала
+            $table->string('block');
+            $table->json('selected_categories')->nullable();
+            $table->text('message_text');
+            $table->string('send_offset');
+
             $table->unsignedBigInteger('director_id')->nullable();
             $table->foreign('director_id')->references('id')->on('users')->onDelete('set null');
+
             $table->timestamps();
         });
     }
@@ -28,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('wazzup_users');
+        Schema::dropIfExists('mass_mailings');
     }
 };
