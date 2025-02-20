@@ -42,12 +42,6 @@ class CallController extends Controller
         // Декодируем JSON-строку в массив
         $json = json_decode($jsonString, true);
 
-        // Логируем данные звонка
-        Log::info('Данные звонка получены', [
-            'entry_id' => $json['entry_id'],
-            'json' => $json,
-        ]);
-
         // Не записываем звонки от сотрудников клиентам
         if (isset($json['from']['extension'])) {
             return;
@@ -70,34 +64,11 @@ class CallController extends Controller
                             'status' => $json['call_state'],
                             'last_seq' => $json['seq'], // Обновляем last_seq
                         ]);
-
-                        Log::info('Запись звонка успешно обновлена', [
-                            'id' => $call->id,
-                            'new_status' => $json['call_state'],
-                            'new_seq' => $json['seq'],
-                        ]);
-                    } else {
-                        Log::info('Статус звонка не обновлен, так как он уже завершен', [
-                            'id' => $call->id,
-                            'current_status' => $call->status,
-                            'new_status (not_updated)' => $json['call_state'],
-                        ]);
                     }
-                } else {
-                    Log::info('Событие проигнорировано, так как оно устарело', [
-                        'id' => $call->id,
-                        'current_status' => $call->status,
-                        'new_status (ignored)' => $json['call_state'],
-                        'current_seq' => $call->last_seq,
-                        'new_seq' => $json['seq'],
-                    ]);
                 }
             } else {
                 // Если записи нет, создаем новую
-                $call = Call::create($callData);
-
-                // Логируем успешное создание записи
-                Log::info('Запись звонка успешно создана', ['call_id' => $call->id]);
+                Call::create($callData);
             }
         });
     }
@@ -136,9 +107,6 @@ class CallController extends Controller
             'last_seq' => $json['seq'],
         ];
 
-        // Логируем возвращаемые данные
-        Log::info('Данные для создания записи звонка', ['callData' => $callData]);
-
         return $callData;
     }
 
@@ -148,12 +116,6 @@ class CallController extends Controller
 
         // Декодируем JSON-строку в массив
         $json = json_decode($jsonString, true);
-
-        // Логируем данные завершения звонка
-        Log::info('Данные завершения звонка получены', [
-            'entry_id' => $json['entry_id'],
-            'json' => $json,
-        ]);
 
         $status = ($json['entry_result'] == 1) ? 'answered' : 'missed';
 
@@ -169,11 +131,6 @@ class CallController extends Controller
                 $call->update([
                     'duration' => $duration,
                     'status' => $status,
-                ]);
-
-                // Логируем успешное обновление записи
-                Log::info('Запись звонка успешно обновлена (завершение)', [
-                    'id' => $call->id,
                 ]);
             } else {
                 // Если записи нет, логируем ошибку

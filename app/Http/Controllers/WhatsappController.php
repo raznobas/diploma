@@ -65,7 +65,6 @@ class WhatsappController extends Controller
     }
 
     public function handleWazzupMessageEvent(Request $request) {
-        Log::info('Webhook data received:', $request->all());
         $webhookData = $request->json()->all();
 
         if (isset($webhookData['messages']) && is_array($webhookData['messages'])) {
