@@ -21,7 +21,6 @@ const isTasksLoading = ref(false);
 const isClientSalesLoading = ref(false);
 const iframeUrl = ref(null);
 const showIframe = ref(false);
-const wazzupUser = usePage().props.auth.wazzup_user;
 
 const emit = defineEmits(['close', 'client-updated']);
 const formEdit = useForm({
@@ -209,53 +208,6 @@ const copyClientInfo = () => {
         });
 };
 
-const fetchIframeUrl = async () => {
-    try {
-        // Получаем номер телефона из props.client.phone
-        let phone = props.client.phone;
-
-        // Убираем все нецифровые символы
-        phone = phone.replace(/\D/g, '');
-
-        // Если номер начинается с 8, заменяем на 7
-        if (phone.startsWith('8')) {
-            phone = '7' + phone.slice(1);
-        }
-
-        // Проверяем, что номер состоит из 11 цифр и начинается с 7
-        if (!/^7\d{10}$/.test(phone)) {
-            showToast("Номер телефона должен начинаться с 7 и состоять из 11 цифр", "error");
-        }
-
-        // Данные, которые отправляются на бэкенд
-        const data = {
-            user: {
-                id: wazzupUser.id,
-                name: wazzupUser.name,
-            },
-            scope: 'card',
-            filter: [
-                {
-                    chatType: 'whatsapp',
-                    chatId: phone,
-                },
-            ],
-            activeChat: {
-                chatType: 'whatsapp',
-                chatId: phone
-            },
-        };
-
-        // Отправляем POST-запрос на бэкенд
-        const response = await axios.post(route('whatsapp.getIframeUrl'), data);
-        iframeUrl.value = response.data.url;
-        showIframe.value = true;
-    } catch (error) {
-        showToast("Произошла ошибка", "error");
-        console.error('Ошибка при получении iframe URL:', error);
-    }
-};
-
 </script>
 
 <template>
@@ -302,12 +254,6 @@ const fetchIframeUrl = async () => {
                             <p class="text-sm text-gray-500">
                                 <strong>Дата первого обращения в клуб:</strong>
                                 {{ client.created_at ? dayjs(client.created_at).format('DD.MM.YYYY HH:mm') : '' }}<br>
-                                <span v-if="client.is_lead === 0">
-                                    <strong>Дата первого посещения:</strong> {{ firstSaleDate }}<br>
-                                    <strong>Дата перехода из лида в клиента:</strong> {{
-                                        client.purchase_created_at ? dayjs(client.purchase_created_at).format('DD.MM.YYYY') : '–'
-                                    }}
-                                </span>
                             </p>
                         </div>
                         <form v-else @submit.prevent="submitEdit">
@@ -401,9 +347,6 @@ const fetchIframeUrl = async () => {
                             </div>
                         </form>
                     </div>
-                    <PrimaryButton v-if="wazzupUser && client.phone" size="small" class="mt-2" @click="fetchIframeUrl">
-                        Написать в WhatsApp
-                    </PrimaryButton>
                     <form @submit.prevent="submit">
                         <div class="mt-2 flex">
                             <h3 class="text-md font-medium mr-2">Задача на дату</h3>

@@ -603,66 +603,9 @@ class AnalyticsController extends Controller
                 month DESC;
             ";
 
-            // Запрос для звонков
-            $callsQuery = "
-            WITH Calls AS (
-                SELECT
-                    DATE_FORMAT(c.created_at, '%Y-%m') AS `month`,
-                    YEAR(c.created_at) AS `year`,
-                    QUARTER(c.created_at) AS `quarter`,
-                    COUNT(DISTINCT c.id) AS calls
-                FROM
-                    calls c
-                WHERE
-                    c.director_id = ?
-                    AND c.status = 'answered'
-                GROUP BY
-                    DATE_FORMAT(c.created_at, '%Y-%m'),
-                    YEAR(c.created_at),
-                    QUARTER(c.created_at)
-            )
-            SELECT
-                `month`,
-                `year`,
-                NULL AS `quarter`,
-                calls,
-                'monthly' AS aggregation_level
-            FROM
-                Calls
-            UNION ALL
-            SELECT
-                NULL AS `month`,
-                `year`,
-                `quarter`,
-                SUM(calls) AS calls,
-                'quarterly' AS aggregation_level
-            FROM
-                Calls
-            GROUP BY
-                `year`,
-                `quarter`
-            UNION ALL
-            SELECT
-                NULL AS `month`,
-                `year`,
-                NULL AS `quarter`,
-                SUM(calls) AS calls,
-                'yearly' AS aggregation_level
-            FROM
-                Calls
-            GROUP BY
-                `year`
-            ORDER BY
-                `year` DESC,
-                aggregation_level DESC,
-                `quarter` DESC,
-                `month` DESC;
-            ";
-
             $leadsData = DB::select($leadsQuery, [$directorId]);
-            $callsData = DB::select($callsQuery, [$directorId]);
             $formLeadsData = DB::select($formLeadsQuery, [$directorId]);
-            $salesData = $this->mergeAnalyticsData($salesData, $leadsData, $callsData, $formLeadsData);
+            $salesData = $this->mergeAnalyticsData($salesData, $leadsData, $formLeadsData);
 
             return $salesData;
         });
@@ -672,7 +615,7 @@ class AnalyticsController extends Controller
         ]);
     }
 
-    private function mergeAnalyticsData(array $salesData, array $leadsData, array $callsData, array $formLeadsData): array
+    private function mergeAnalyticsData(array $salesData, array $leadsData, array $formLeadsData): array
     {
         // Преобразуем данные о лидах в ассоциативный массив для быстрого поиска
         $leadsMap = [];
@@ -688,19 +631,11 @@ class AnalyticsController extends Controller
             $formLeadsMap[$key] = $formLead->form_leads;
         }
 
-        // Преобразуем данные о звонках в ассоциативный массив для быстрого поиска
-        $callsMap = [];
-        foreach ($callsData as $call) {
-            $key = $call->year . '-' . ($call->month ?? '') . '-' . ($call->quarter ?? '') . '-' . $call->aggregation_level;
-            $callsMap[$key] = $call->calls;
-        }
-
         // Добавляем количество лидов, звонков и заявок к данным о продажах
         foreach ($salesData as &$sale) {
             $key = $sale->year . '-' . ($sale->month ?? '') . '-' . ($sale->quarter ?? '') . '-' . $sale->aggregation_level;
             $sale->leads = $leadsMap[$key] ?? 0;
             $sale->form_leads = $formLeadsMap[$key] ?? 0;
-            $sale->calls = $callsMap[$key] ?? 0;
         }
 
         return $salesData;

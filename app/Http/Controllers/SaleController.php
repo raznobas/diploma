@@ -9,6 +9,9 @@ use App\Models\Client;
 use App\Models\ClientStatus;
 use App\Models\LeadAppointment;
 use App\Models\Sale;
+use App\Traits\TranslatableAttributes;
+use DateTime;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +21,7 @@ use Silber\Bouncer\Bouncer;
 class SaleController extends Controller
 {
     use AuthorizesRequests;
+    use TranslatableAttributes;
 
     protected $bouncer;
 
@@ -61,12 +65,24 @@ class SaleController extends Controller
         ]);
     }
 
+    /**
+     * @throws AuthorizationException
+     * @throws \Exception
+     */
     public function store(Request $request)
     {
         $this->authorize('manage-sales');
 
+        $today = now()->toDateString();
+
+        $attributes = $this->getTranslatableAttributes();
+
         $validated = $request->validate([
-            'sale_date' => 'required|date',
+            'sale_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'service_or_product' => 'required|in:service,product',
@@ -78,16 +94,33 @@ class SaleController extends Controller
             'training_count' => 'nullable|exists:categories,name',
             'trainer_category' => 'nullable|exists:categories,name',
             'trainer' => 'nullable|exists:categories,name',
-            'subscription_start_date' => 'nullable|date',
-            'subscription_end_date' => 'nullable|date',
+            'subscription_start_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:' . $today,
+            ],
+            'subscription_end_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'cost' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'pay_method' => 'nullable|exists:categories,name',
             'comment' => 'nullable|string',
             'created_by' => 'required||exists:users,id',
-        ]);
+        ], [], $attributes);
 
         $client = Client::find($validated['client_id']);
+
+        // DateTime для корректного сравнения
+        $startDate = new DateTime($validated['subscription_start_date']);
+        $endDate = new DateTime($validated['subscription_end_date']);
+
+        // Дата окончания не должна быть раньше даты начала
+        if ($endDate < $startDate) {
+            return redirect()->back()->withErrors(['error' => 'Дата окончания не должна быть раньше даты начала']);
+        }
 
         // Если покупку сделал лид, тогда меняем статус аккаунта на клиента.
         if ($client->is_lead) {
@@ -123,12 +156,24 @@ class SaleController extends Controller
         return redirect()->back();
     }
 
+    /**
+     * @throws AuthorizationException
+     * @throws \Exception
+     */
     public function update(Request $request, $id)
     {
         $this->authorize('manage-sales');
 
+        $today = now()->toDateString();
+
+        $attributes = $this->getTranslatableAttributes();
+
         $validated = $request->validate([
-            'sale_date' => 'required|date',
+            'sale_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'service_or_product' => 'required|in:service,product',
@@ -140,14 +185,22 @@ class SaleController extends Controller
             'training_count' => 'nullable|exists:categories,name',
             'trainer_category' => 'nullable|exists:categories,name',
             'trainer' => 'nullable|exists:categories,name',
-            'subscription_start_date' => 'nullable|date',
-            'subscription_end_date' => 'nullable|date',
+            'subscription_start_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:' . $today,
+            ],
+            'subscription_end_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'cost' => 'required|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'pay_method' => 'nullable|exists:categories,name',
             'comment' => 'nullable|string',
             'created_by' => 'nullable|exists:users,id',
-        ]);
+        ], [], $attributes);
 
         if ($validated['director_id'] != auth()->user()->director_id) {
             return redirect()->back()->withErrors(['director_id' => 'У вас нет прав на редактирование этой продажи.']);
@@ -160,6 +213,15 @@ class SaleController extends Controller
         $client = Client::where('id', $validated['client_id'])
             ->where('director_id', auth()->user()->director_id)
             ->firstOrFail();
+
+        // DateTime для корректного сравнения
+        $startDate = new DateTime($validated['subscription_start_date']);
+        $endDate = new DateTime($validated['subscription_end_date']);
+
+        // Дата окончания не должна быть раньше даты начала
+        if ($endDate < $startDate) {
+            return redirect()->back()->withErrors(['error' => 'Дата окончания не должна быть раньше даты начала']);
+        }
 
         // Если покупку сделал лид, тогда меняем статус аккаунта на клиента.
         if ($client->is_lead) {

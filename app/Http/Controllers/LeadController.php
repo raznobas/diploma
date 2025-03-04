@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Client;
 use App\Models\ClientStatus;
-use App\Models\Gym;
 use App\Models\LeadAppointment;
+use App\Traits\TranslatableAttributes;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +17,7 @@ use Silber\Bouncer\Bouncer;
 class LeadController extends Controller
 {
     use AuthorizesRequests;
+    use TranslatableAttributes;
 
     protected $bouncer;
 
@@ -78,9 +79,14 @@ class LeadController extends Controller
         $this->authorize('manage-leads');
 
         $today = now()->toDateString();
+        $attributes = $this->getTranslatableAttributes();
 
         $validated = $request->validate([
-            'sale_date' => 'required|date',
+            'sale_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'sport_type' => 'nullable|exists:categories,name',
@@ -93,7 +99,7 @@ class LeadController extends Controller
             ],
             'training_time' => 'nullable',
             'status' => 'nullable|in:scheduled,cancelled,completed,no_show',
-        ]);
+        ], [], $attributes);
 
         $appointment = LeadAppointment::create($validated);
 
@@ -112,8 +118,14 @@ class LeadController extends Controller
         $this->authorize('manage-leads');
 
         $today = now()->toDateString();
+        $attributes = $this->getTranslatableAttributes();
 
         $validated = $request->validate([
+            'sale_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . $today,
+            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'sport_type' => 'nullable|exists:categories,name',
@@ -126,7 +138,7 @@ class LeadController extends Controller
             ],
             'training_time' => 'nullable',
             'status' => 'nullable|in:scheduled,cancelled,completed,no_show',
-        ]);
+        ], [], $attributes);
 
         if ($validated['director_id'] != auth()->user()->director_id) {
             return redirect()->back()->withErrors(['director_id' => 'У вас нет прав на редактирование этой записи.']);
@@ -161,87 +173,6 @@ class LeadController extends Controller
         $lead->delete();
 
         return redirect()->back()->with('success', "Запись успешно удалена");
-    }
-
-    public function storeApi(Request $request)
-    {
-        // Валидация входных данных
-        $validated = $request->validate([
-            'gym_name' => 'string|max:255',
-            'client_name' => 'required|string|max:255',
-            'client_phone' => [
-                'required',
-                'string',
-                'regex:/^\+?[78]?[0-9]{10}$/', // Разрешаем номера форматов 79123456789, 89123456789, +79123456789, +89123456789
-            ],
-        ]);
-
-        // Получаем данные из запроса
-        $gymName = $validated['gym_name'];
-        $clientName = $validated['client_name'];
-        $clientPhone = $validated['client_phone'];
-
-        // Очищаем номер телефона от лишних символов и приводим к формату 79123456789
-        $clientPhone = preg_replace('/[^0-9]/', '', $clientPhone); // Убираем все символы, кроме цифр
-
-        // Приводим номер к формату 79123456789
-        if (strlen($clientPhone) === 10 && $clientPhone[0] === '9') {
-            $clientPhone = '7' . $clientPhone; // Добавляем 7 в начало номера
-        } elseif (strlen($clientPhone) === 11 && $clientPhone[0] === '8') {
-            $clientPhone = '7' . substr($clientPhone, 1); // Заменяем 8 на 7 в начале номера
-        } elseif (strlen($clientPhone) === 11 && $clientPhone[0] !== '7') {
-            return response()->json(['error' => 'Некорректный формат номера телефона'], 400);
-        }
-
-        // Ищем зал по названию с использованием модели Gym
-        $gym = Gym::where('name', $gymName)->first();
-
-        // Если зал не найден, возвращаем ошибку
-        if (!$gym) {
-            return response()->json(['error' => 'Зал не найден'], 404);
-        }
-
-        $directorId = $gym->director_id ?? 3; // Если директора зала не нашли, тогда записываем к "общему, тестовому" директору
-
-        // Формируем ad_source
-        $adSource = 'САЙТ'; // По умолчанию
-        if ($gym->director_id === null && !empty($gym->label)) {
-            $adSource = 'extrimpower.ru ' . $gym->label; // Если director_id null, записываем label зала в ad_source
-        }
-
-        // Проверяем, существует ли уже клиент с таким именем и номером телефона
-        $lead = Client::firstOrCreate(
-            [
-                'name' => $clientName,
-                'phone' => $clientPhone,
-            ],
-            [
-                'is_lead' => true,
-                'director_id' => $directorId,
-                'ad_source' => $adSource,
-            ]
-        );
-
-        // Если лид уже существовал, возвращаем сообщение об этом
-        if (!$lead->wasRecentlyCreated) {
-            return response()->json([
-                'message' => 'Лид уже существует',
-                'id' => $lead->id,
-            ], 200);
-        }
-
-        // Создаем запись в таблице статусов клиентов/лид
-        ClientStatus::create([
-            'client_id' => $lead->id,
-            'status_to' => 'form_lead_created', // статус подразумевает создание лид из формы обратной связи с сайта extrimpower.ru
-            'director_id' => $lead->director_id,
-        ]);
-
-        // Возвращаем успешный ответ
-        return response()->json([
-            'message' => 'Лид успешно создан',
-            'id' => $lead->id,
-        ], 201);
     }
 
     public function toggleCheck(Client $lead)

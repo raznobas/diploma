@@ -106,8 +106,6 @@ const formatPeriod = (item) => {
                                     <Tooltip class="ms-1" content="Повторные продления определяются как кол-во уникальных клиентов, которые приобрели абонемент минимум второй раз и более. Учитывается любой тип услуги, кроме пробной. Процентное соотношение относительно уникальных клиентов."/>
                                 </div>
                             </th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Звонки</th>
-                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Заявки</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сумма продаж</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Средний чек</th>
                             <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Перс. продажи</th>
@@ -140,8 +138,6 @@ const formatPeriod = (item) => {
                             <td class="px-3 py-2 whitespace-nowrap">
                                 {{ item.repeat_renewals }} ({{ formatPercentage((item.repeat_renewals / (Number(item.unique_clients))) * 100) }}%)
                             </td>
-                            <td class="px-3 py-2 whitespace-nowrap">{{ item.calls }}</td>
-                            <td class="px-3 py-2 whitespace-nowrap">{{ item.form_leads }}</td>
                             <td class="px-3 py-2 whitespace-nowrap font-black">{{ Number(item.total_paid_amount).toFixed(0) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ Number(item.avg_check).toFixed(0) }}</td>
                             <td class="px-3 py-2 whitespace-nowrap">{{ item.individual_sales_count }}</td>

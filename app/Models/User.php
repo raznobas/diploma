@@ -53,4 +53,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'user_sender_id');
     }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'director_id');
+    }
+
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'director_id');
+    }
 }

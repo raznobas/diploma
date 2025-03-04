@@ -15,7 +15,6 @@ defineProps({
 });
 
 const user = usePage().props.auth.user;
-const gym = usePage().props.auth.gym;
 
 const form = useForm({
     name: user.name,
@@ -26,7 +25,6 @@ const form = useForm({
 <template>
     <section>
         <header>
-            <h2 v-if="gym" class="text-lg font-medium text-gray-900 mb-3">Зал: {{ gym.label }}</h2>
             <h2 class="text-lg font-medium text-gray-900">Информация о профиле</h2>
 
             <p class="mt-1 text-sm text-gray-600">

@@ -31,17 +31,6 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
-        // Получаем данные о зале, если пользователь авторизован
-        $gym = null;
-        if ($user) {
-            $gym = \App\Models\Gym::where('director_id', $user->director_id)->first();
-        }
-
-        $wazzup_user = null;
-        if ($user) {
-            $wazzup_user = \App\Models\WazzupUser::where('director_id', $user->director_id)->first();
-        }
-
         return [
             ...parent::share($request),
             'auth' => [
@@ -49,13 +38,6 @@ class HandleInertiaRequests extends Middleware
                 'role' => $user ? $user->roles->first()->name : null,
                 'abilities' => $user ? $user->getAbilities()->pluck('name')->toArray() : [],
                 'director_id' => $user ? $user->director_id : null,
-                'gym' => $gym ? [ // Добавляем данные о зале
-                    'label' => $gym->label,
-                ] : null,
-                'wazzup_user' => $wazzup_user ? [
-                    'id' => $wazzup_user->wazzup_id,
-                    'name' => $wazzup_user->name,
-                ] : null,
             ],
         ];
     }

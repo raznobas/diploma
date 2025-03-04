@@ -122,7 +122,7 @@ class CategoryCostController extends Controller
         $categoryCost = CategoryCost::findOrFail($id);
 
         if ($categoryCost->director_id !== auth()->user()->director_id) {
-            return redirect()->back()->withErrors(['error' => 'У вас нет прав на удаление этой связки.']);
+            return redirect()->back()->withErrors(['error' => 'У вас нет прав на удаление этой сборки.']);
         }
 
         $categoryCost->delete();

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Call;
 use App\Models\Category;
 use App\Models\Client;
 use App\Models\ClientStatus;
 use App\Models\LeadAppointment;
 use App\Models\Sale;
+use App\Traits\TranslatableAttributes;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +17,7 @@ use Silber\Bouncer\Bouncer;
 class ClientController extends Controller
 {
     use AuthorizesRequests;
+    use TranslatableAttributes;
 
     protected $bouncer;
 
@@ -59,9 +60,10 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(Request $request, $callId = null)
+    public function store(Request $request)
     {
         $this->authorize('manage-sales');
+        $attributes = $this->getTranslatableAttributes();
 
         // Очищаем номер телефона от лишних символов
         if ($request->has('phone')) {
@@ -84,7 +86,7 @@ class ClientController extends Controller
             'ad_source' => 'nullable|string|max:255',
             'is_lead' => 'boolean',
             'director_id' => 'required|exists:users,id',
-        ]);
+        ], [], $attributes);
 
         // Проверяем, существует ли клиент с таким номером телефона
         if ($request->has('phone') && $request->phone) {
@@ -111,31 +113,13 @@ class ClientController extends Controller
             'director_id' => $client->director_id,
         ]);
 
-        // Если передан callId, обновляем запись звонка
-        if ($callId) {
-            // Находим запись звонка по callId
-            $call = Call::find($callId);
-
-            if ($call) {
-                // Получаем номер
-                $phoneFrom = $call->phone_from;
-
-                // Находим все записи звонков с таким же номером phone_from
-                $callsWithSamePhone = Call::where('phone_from', $phoneFrom)->get();
-
-                // Обновляем client_id для всех найденных записей
-                foreach ($callsWithSamePhone as $callToUpdate) {
-                    $callToUpdate->update(['client_id' => $client->id]);
-                }
-            }
-        }
-
         return redirect()->back()->with(['person' => $client]);
     }
 
     public function update(Request $request, $id)
     {
         $this->authorize('manage-sales');
+        $attributes = $this->getTranslatableAttributes();
 
         if ($request->has('phone')) {
             $request->merge(['phone' => preg_replace('/[^0-9]/', '', $request->phone)]);
@@ -154,7 +138,7 @@ class ClientController extends Controller
             'address' => 'nullable|string|max:255',
             'gender' => 'nullable|in:male,female',
             'ad_source' => 'nullable|string|max:255',
-        ]);
+        ], [], $attributes);
 
         $client = Client::findOrFail($id);
 
