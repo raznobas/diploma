@@ -251,10 +251,10 @@ const copyClientInfo = () => {
                                 <br>
                                 <strong>Источник:</strong> {{ client.ad_source }}
                             </p>
-                            <p class="text-sm text-gray-500">
-                                <strong>Дата первого обращения в клуб:</strong>
-                                {{ client.created_at ? dayjs(client.created_at).format('DD.MM.YYYY HH:mm') : '' }}<br>
-                            </p>
+<!--                            <p class="text-sm text-gray-500">-->
+<!--                                <strong>Дата первого обращения в клуб:</strong>-->
+<!--                                {{ client.created_at ? dayjs(client.created_at).format('DD.MM.YYYY HH:mm') : '' }}<br>-->
+<!--                            </p>-->
                         </div>
                         <form v-else @submit.prevent="submitEdit">
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-1 items-end">
