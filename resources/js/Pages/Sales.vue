@@ -69,30 +69,57 @@ const updateCost = () => {
         training_count: form.training_count,
         trainer_category: form.trainer_category,
     };
-    const categoryIds = Object.keys(categoryFields).map(field => {
-        const category = props.categories.find(c => c.id === categoryFields[field]);
-        return category ? {field, id: category.id} : null;
-    }).filter(item => item !== null);
+
+    // Получаем ID всех выбранных категорий
+    const categoryIds = Object.keys(categoryFields)
+        .map(field => {
+            const category = props.categories.find(c => c.id === categoryFields[field]);
+            return category ? { field, id: category.id } : null;
+        })
+        .filter(item => item !== null);
 
     let totalCost = 0;
 
+    // Перебираем все основные категории
     categoryIds.forEach(item => {
-        const categoryCosts = props.categoryCosts.filter(cc => cc.main_category_id == item.id);
+        const categoryCosts = props.categoryCosts.filter(cc => cc.main_category_id === item.id);
+
         if (categoryCosts.length > 0) {
-            // Проверяем, что хотя бы одна из дополнительных категорий соответствует основной категории
-            const matchingCost = categoryCosts.find(cc => {
-                return cc.additional_costs.every(ac => categoryIds.some(ci => ci.id === ac.additional_category_id));
+            // Ищем стоимость с наибольшим количеством дополнительных категорий, которые есть в выбранных
+            let bestMatch = null;
+            let maxAdditionalCount = -1; // Начинаем с -1, чтобы учитывать записи без дополнительных категорий
+
+            categoryCosts.forEach(cc => {
+                // Получаем ID всех дополнительных категорий для текущей стоимости
+                const additionalCategoryIds = cc.additional_costs.map(ac => ac.additional_category_id);
+
+                // Проверяем, что все дополнительные категории из categoryCosts есть в выбранных
+                const allAdditionalMatch = additionalCategoryIds.every(acId =>
+                    categoryIds.some(ci => ci.id === acId)
+                );
+
+                // Если это запись без дополнительных категорий, она всегда подходит
+                const isBaseCost = additionalCategoryIds.length === 0;
+
+                if ((allAdditionalMatch || isBaseCost) && additionalCategoryIds.length > maxAdditionalCount) {
+                    // Если это лучшая комбинация, сохраняем её
+                    bestMatch = cc;
+                    maxAdditionalCount = additionalCategoryIds.length;
+                }
             });
 
-            if (matchingCost) {
-                // Если найдена соответствующая комбинация, добавляем стоимость основной категории
-                totalCost += parseFloat(matchingCost.cost);
+            if (bestMatch) {
+                // Если найдена соответствующая комбинация, добавляем стоимость
+                totalCost += parseFloat(bestMatch.cost);
             }
         }
     });
 
+    // Обновляем стоимость в форме
     form.cost = totalCost;
 };
+
+// Следим за изменениями выбранных категорий
 watch(() => [
     form.sport_type,
     form.service_type,
@@ -105,6 +132,9 @@ watch(() => [
 
 
 const submit = () => {
+    if (!form.client_object) {
+        showToast("Выберите клиента для добавления продажи", "info");
+    }
     updateFormWithNames();
     form.client_id = form.client_object.id;
     form.post(route('sales.store'), {
@@ -430,6 +460,7 @@ const onPageChange = (event) => {
                             id="fio"
                             v-model="form.client_object"
                             :options="searchResults"
+                            :allow-empty="false"
                             :searchable="true"
                             :max-height="400"
                             :options-limit="200"

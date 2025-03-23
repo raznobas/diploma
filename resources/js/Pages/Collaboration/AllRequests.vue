@@ -91,7 +91,7 @@ const onPageChange = (event) => {
                             <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="request in allRequests.data" :key="request.id">
                                 <td class="px-3 py-2 whitespace-nowrap">{{ request.id }}</td>
-                                <td class="px-3 py-2 whitespace-nowrap">{{ request.manager_email }}</td>
+                                <td class="px-3 py-2 whitespace-nowrap">{{ request.manager.email }}</td>
                                 <td class="px-3 py-2 whitespace-nowrap">
                                 <span v-if="request.status === 'pending'">
                                     В ожидании

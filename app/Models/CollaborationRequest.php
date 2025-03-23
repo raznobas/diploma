@@ -12,7 +12,17 @@ class CollaborationRequest extends Model
     protected $fillable = [
         'director_id',
         'manager_id',
-        'director_email',
-        'manager_email',
     ];
+
+    // Отношение к менеджеру
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    // Отношение к директору
+    public function director()
+    {
+        return $this->belongsTo(User::class, 'director_id');
+    }
 }

@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import {Head} from "@inertiajs/vue3";
 import axios from "axios";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import {ref} from "vue";
+import {ref, watch} from "vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import {useToast} from "@/useToast.js";
 import Spinner from "@/Components/Spinner.vue";
@@ -14,6 +14,7 @@ const props = defineProps(['categories']);
 const isLoading = ref(false);
 const startDate = ref(dayjs().subtract(1, 'month').format('YYYY-MM-DD'));
 const endDate = ref(dayjs().format('YYYY-MM-DD'));
+const exportAllCategories = ref(false);
 
 // Состояния для выбранных категорий
 const selectedCategories = ref({
@@ -76,6 +77,11 @@ const toggleAllCategories = (type) => {
 };
 
 const exportData = async () => {
+    if (!startDate.value || !endDate.value) {
+        showToast("Выберите диапазон дат для экспорта", "error");
+        return;
+    }
+
     isLoading.value = true;
 
     try {
@@ -83,6 +89,7 @@ const exportData = async () => {
             start_date: startDate.value,
             end_date: endDate.value,
             categories: selectedCategories.value,
+            export_all_categories: exportAllCategories.value,
         }, {
             responseType: 'blob', // Указываем, что ожидаем бинарные данные (файл)
         });
@@ -117,6 +124,15 @@ const exportData = async () => {
         isLoading.value = false;
     }
 };
+
+watch(exportAllCategories, (newValue) => {
+    if (newValue) {
+        // Очищаем каждый массив внутри selectedCategories
+        for (const key in selectedCategories.value) {
+            selectedCategories.value[key] = [];
+        }
+    }
+});
 </script>
 
 <template>
@@ -136,6 +152,7 @@ const exportData = async () => {
                                 type="date"
                                 v-model="startDate"
                                 id="start_date"
+                                required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             />
                         </div>
@@ -145,12 +162,28 @@ const exportData = async () => {
                                 type="date"
                                 v-model="endDate"
                                 id="end_date"
+                                required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             />
                         </div>
                     </div>
                     <h4 class="mb-2 text-md font-medium text-gray-900">Выберите категории: </h4>
-                    <div v-for="type in types" :key="type.name" class="mb-4">
+
+                    <label class="inline-flex items-center">
+                        <input
+                            type="checkbox"
+                            v-model="exportAllCategories"
+                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 my-3"
+                        />
+                        <span class="ml-2 text-lg text-gray-700">Экспортировать продажи со всеми категориями</span>
+                    </label>
+
+                    <div
+                        v-for="type in types"
+                        :key="type.name"
+                        :class="{'opacity-50 pointer-events-none': exportAllCategories}"
+                        class="mb-4"
+                    >
                         <div class="flex items-center mb-2 gap-2">
                             <h4 class="text-sm font-medium text-gray-700">{{ type.title }}</h4>
                             <button

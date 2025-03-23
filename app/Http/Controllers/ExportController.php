@@ -14,8 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ExportController extends Controller
 {
     public function index() {
-        if (auth()->user()->director_id === null) {
-            return false;
+        $directorId = auth()->user()->director_id;
+
+        if (auth()->user()->id !== $directorId) {
+            return redirect()->back()->withErrors(['error' => 'Экспорт продаж доступен только директору.']);
         }
 
         $categories = Category::where('director_id', auth()->user()->director_id)->get();
@@ -27,30 +29,44 @@ class ExportController extends Controller
 
     public function export(Request $request)
     {
+        $directorId = auth()->user()->director_id;
+
+        if (auth()->user()->id !== $directorId) {
+            return redirect()->back()->withErrors(['error' => 'Экспорт продаж доступен только директору.']);
+        }
+
         // Валидация входных данных
         $request->validate([
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'categories' => 'nullable|array',
+            'export_all_categories' => 'nullable|boolean', // Параметр для экспорта всех категорий
         ]);
 
         // Получаем данные из запроса
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $selectedCategories = $request->input('categories', []);
+        $exportAllCategories = $request->input('export_all_categories', false);
 
         $directorId = auth()->user()->director_id;
+
         // Фильтруем данные по диапазону дат и director_id
         $query = Sale::where('director_id', $directorId)
-            ->whereBetween('sale_date', [$startDate, $endDate])
-            ->where(function ($q) use ($selectedCategories) {
+            ->whereBetween('sale_date', [$startDate, $endDate]);
+
+        // Если не выбран экспорт всех категорий, применяем фильтр по категориям
+        if (!$exportAllCategories && !empty($selectedCategories)) {
+            $query->where(function ($q) use ($selectedCategories) {
                 foreach ($selectedCategories as $type => $names) {
                     if (!empty($names)) {
-                        $q->orWhereIn($type, $names);
+                        $q->whereIn($type, $names);
                     }
                 }
-            })
-            ->with('client:id,name,surname,patronymic,phone');
+            });
+        }
+
+        $query->with('client:id,name,surname,patronymic,phone');
 
         // Получаем отфильтрованные данные
         $data = $query->get();

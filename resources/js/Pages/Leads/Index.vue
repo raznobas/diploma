@@ -25,7 +25,6 @@ const props = defineProps(['categories', 'leads', 'leadAppointments', 'person', 
 
 const form = useForm({
     id: null, // символизирует о том, что активно редактирование
-    sale_date: new Date().toISOString().split('T')[0],
     client_object: null,
     client_id: null,
     director_id: usePage().props.auth.director_id,
@@ -37,6 +36,9 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!form.client_object) {
+        showToast("Выберите лида для добавления записи", "info");
+    }
     form.client_id = form.client_object.id;
     form.post(route('leads.store'), {
         onSuccess: () => {
@@ -127,7 +129,6 @@ const editAppointment = (appointment) => {
         behavior: 'smooth'
     });
     form.id = appointment.id; // form.id символизирует о том, что активно редактирование
-    form.sale_date = appointment.sale_date;
     form.client_object = {
         id: appointment.client_id,
         surname: appointment.client.surname,
@@ -144,6 +145,9 @@ const editAppointment = (appointment) => {
     form.training_time = appointment.training_time;
 };
 const submitEdit = () => {
+    if (!form.client_object) {
+        showToast("Выберите лида для добавления записи", "info");
+    }
     form.client_id = form.client_object.id;
     form.put(route('leads.update', {id: form.id}), {
         onSuccess: () => {
@@ -382,12 +386,6 @@ const copyClientInfo = (client) => {
             <form @submit.prevent="submit" class="mt-6">
                 <h3 v-if="form.id" class="mt-8 mb-4 text-lg font-medium text-gray-900">Редактирование записи лида</h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 items-end mt-2">
-                    <div class="flex flex-col">
-                        <label for="sale_date" class="text-sm font-medium text-gray-700">Дата продажи</label>
-                        <input id="sale_date" type="date" v-model="form.sale_date"
-                               class="mt-1 p-1 border border-gray-300 rounded-md"/>
-                        <InputError :message="form.errors.sale_date" class="mt-2 text-sm text-red-600"/>
-                    </div>
                     <div class="flex flex-col col-span-2 relative">
                         <label for="fio" class="text-sm font-medium text-gray-700">Имя
                             <span v-if="form.client_object">
@@ -397,6 +395,7 @@ const copyClientInfo = (client) => {
                         </label>
                         <vue-multiselect id="fio"
                                          v-model="form.client_object"
+                                         :allow-empty="false"
                                          :options="searchResults"
                                          :searchable="true"
                                          :max-height="400"

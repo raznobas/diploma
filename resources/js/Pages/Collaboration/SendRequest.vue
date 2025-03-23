@@ -15,7 +15,6 @@ const {showToast} = useToast();
 const form = useForm({
     director_email: '',
     manager_id: usePage().props.auth.user.id,
-    manager_email: usePage().props.auth.user.email,
 });
 const isLoading = ref(false);
 
@@ -106,7 +105,7 @@ const submit = () => {
                             У вас уже есть активная заявка, чтобы подать другую, отмените текущую
                         </span>
                             <h3 class="text-xl mt-4 mb-1 font-bold text-gray-800 leading-tight">Текущая заявка: </h3>
-                            <p><strong>Почта директора:</strong> {{ currentRequest.director_email }}</p>
+                            <p><strong>Почта директора:</strong> {{ currentRequest.director.email }}</p>
                             <p><strong>Статус:</strong>
                                 <span v-if="currentRequest.status === 'pending'">
                                     В ожидании
@@ -129,7 +128,7 @@ const submit = () => {
                         </div>
                         <div v-else-if="currentRequest && currentRequest.status === 'approved'">
                             <h3 class="font-semibold text-lg text-gray-800 leading-tight">Email вашего текущего директора:
-                                {{ currentRequest.director_email }}</h3>
+                                {{ currentRequest.director.email }}</h3>
                             <p class="py-1">Чтобы отправить заявку другому директору, удалите прикрепление от текущего</p>
                             <DangerButton class="mt-4" @click="deleteRequest(currentRequest.id)">
                                 Удалить прикрепление к директору

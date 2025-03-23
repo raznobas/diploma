@@ -27,10 +27,11 @@ class CollaborationController extends Controller
             return redirect()->route('dashboard');
         }
 
-        // Получаем все запросы для текущего директора
+        // Получаем все запросы для текущего директора с загрузкой связанных данных
         $requests = CollaborationRequest::where('director_id', $user->director_id)
             ->whereIn('status', ['approved', 'pending'])
             ->orderBy('created_at', 'desc')
+            ->with(['manager', 'director']) // Загружаем связанные модели
             ->paginate(15);
 
         return Inertia::render('Collaboration/AllRequests', [
@@ -112,7 +113,9 @@ class CollaborationController extends Controller
 
     public function getCurrentRequest($manager_id)
     {
-        $currentRequest = CollaborationRequest::where('manager_id', $manager_id)->first();
+        $currentRequest = CollaborationRequest::where('manager_id', $manager_id)
+            ->with(['manager', 'director'])
+            ->first();
         if(!$currentRequest) return null;
 
         return response()->json($currentRequest);
@@ -148,9 +151,7 @@ class CollaborationController extends Controller
 
         $collaborationRequest = CollaborationRequest::create([
             'director_id' => $director->id,
-            'manager_id' => Auth::user()->id,
-            'director_email' => $request->director_email,
-            'manager_email' => $request->manager_email,
+            'manager_id' => Auth::user()->id
         ]);
 
         // Возвращаем данные о текущей заявке в ответе

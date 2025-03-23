@@ -138,6 +138,7 @@ const submitEditOption = () => {
     }
 
     form.name = editingCategory.value.name;
+    form.type = editingCategory.value.type;
     form.put(route('categories.update', editingCategory.value.id), {
         onSuccess: () => {
             cancelEdit();

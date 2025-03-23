@@ -10,7 +10,6 @@ class LeadAppointment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sale_date',
         'client_id',
         'director_id',
         'service_or_product',

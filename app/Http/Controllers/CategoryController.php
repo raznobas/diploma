@@ -57,6 +57,16 @@ class CategoryController extends Controller
             'director_id' => 'required|exists:users,id',
         ]);
 
+        // Проверка на уникальность категории
+        $existingCategory = Category::where('director_id', auth()->user()->director_id)
+            ->where('name', $request->name)
+            ->where('type', $request->type)
+            ->first();
+
+        if ($existingCategory) {
+            return redirect()->back()->withErrors(['error' => 'Категория с таким именем и типом уже существует.']);
+        }
+
         Category::create([
             'director_id' => auth()->user()->director_id,
             'name' => $request->name,
@@ -77,6 +87,16 @@ class CategoryController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
+
+        // Проверка на уникальность категории
+        $existingCategory = Category::where('director_id', auth()->user()->director_id)
+            ->where('name', $request->name)
+            ->where('type', $request->type)
+            ->first();
+
+        if ($existingCategory) {
+            return redirect()->back()->withErrors(['error' => 'Категория с таким именем и типом уже существует.']);
+        }
 
         $category->update([
             'name' => $request->name,

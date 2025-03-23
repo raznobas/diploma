@@ -82,11 +82,6 @@ class LeadController extends Controller
         $attributes = $this->getTranslatableAttributes();
 
         $validated = $request->validate([
-            'sale_date' => [
-                'required',
-                'date',
-                'after_or_equal:' . $today,
-            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'sport_type' => 'nullable|exists:categories,name',
@@ -121,11 +116,6 @@ class LeadController extends Controller
         $attributes = $this->getTranslatableAttributes();
 
         $validated = $request->validate([
-            'sale_date' => [
-                'required',
-                'date',
-                'after_or_equal:' . $today,
-            ],
             'client_id' => 'required|exists:clients,id',
             'director_id' => 'required|exists:users,id',
             'sport_type' => 'nullable|exists:categories,name',
